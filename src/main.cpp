@@ -67,6 +67,8 @@ CIO aoLed[5] = {oLedGreen, oLedOrange, oLedRed, CIO(UPPER_LED_PIN,OUTPUT), CIO(L
 CIO aoHall[3] = {CIO(HALL_A_PIN), CIO(HALL_B_PIN), CIO(HALL_C_PIN) };
 #define HALL_Count 3
 
+CIO aoBLDC[6] = {CIO(BLDC_BH_PIN),CIO(BLDC_BL_PIN),CIO(BLDC_GH_PIN),CIO(BLDC_GL_PIN),CIO(BLDC_YH_PIN),CIO(BLDC_YL_PIN)};
+
 void LedError(int iError)
 {
   for (int j=0; j<iError; j++)
@@ -110,7 +112,11 @@ void setup()
   // hardware interrupt enable
   sensor.enableInterrupts(doA, doB, doC);
 
-  if (!driver.init())  LedError(10);
+  if (!driver.init())
+  {
+    LedError(10);
+    for(int i=0; i<6; i++)  aoBLDC[i].Init();  // set back to input to free the blocked motor
+  }  
 
 
 }
