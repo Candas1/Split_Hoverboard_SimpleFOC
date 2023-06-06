@@ -2,9 +2,9 @@
 ## this is just the beginning.. 
 HallSensor class working and three led blinking while rotating the (slave) wheel.
 
-#### This PlatformIO code is based on https://github.com/Candas1/Sideboard-Arduino from Candas1 :-)
+#### This PlatformIO code is based on [Sideboard-Arduino](https://github.com/Candas1/Sideboard-Arduino) from Candas1 :-)
 
-#### for choosing your hardware layout look here: https://github.com/RoboDurden/Hoverboard-Firmware-Hack-Gen2.x
+#### for choosing your hardware layout look here: [Hoverboard-Firmware-Hack-Gen2.x](https://github.com/RoboDurden/Hoverboard-Firmware-Hack-Gen2.x)
 /include/config.h :
 ```
 // LAYOUT_2_X is used in defines.h
@@ -15,7 +15,7 @@ HallSensor class working and three led blinking while rotating the (slave) wheel
 #define LAYOUT_2_5	// NOT READY !!! https://github.com/RoboDurden/Hoverboard-Firmware-Hack-Gen2.x/issues/11
 ```
 
-#### Big thanks to https://github.com/CommunityGD32Cores/ArduinoCore-GD32 for making it possible to build a firmware based on https://github.com/simplefoc :-)
+#### Big thanks to [ArduinoCore-GD32](https://github.com/CommunityGD32Cores/ArduinoCore-GD32) for making it possible to build a firmware based on [simplefoc](https://github.com/simplefoc) :-)
 
 ### How to use
 * Install [Vscode](https://code.visualstudio.com/download)
