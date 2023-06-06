@@ -40,4 +40,24 @@
 #define ARRAY_LEN(x) (uint32_t)(sizeof(x) / sizeof(*(x)))
 #define MAP(x, in_min, in_max, out_min, out_max) (((((x) - (in_min)) * ((out_max) - (out_min))) / ((in_max) - (in_min))) + (out_min))
 
+#ifdef DEBUG_UART
+	#ifdef DEBUG_UART
+		#define SERIALDEBUG DEBUG_UART
+	#endif	
+	#ifdef DEBUG_STLINK
+		#define SERIALDEBUG DEBUG_STLINK
+	#endif	
+	#define DEBUG(code)	{code}
+	#define OUT(s)	{SERIALDEBUG.print(s);}
+	#define OUT2(s,i)	{SERIALDEBUG.print(s);SERIALDEBUG.print(": ");SERIALDEBUG.print(i);}
+	#define OUT2T(s,i)	{SERIALDEBUG.print(s);SERIALDEBUG.print(": ");SERIALDEBUG.print(i);SERIALDEBUG.print("  ");}
+	#define OUTLN(s)	{SERIALDEBUG.println(s);}
+#else
+	#define DEBUG(code)
+	#define OUT(s)
+	#define OUT2(s)
+	#define OUT2T(s)
+	#define OUTLN(s)
+#endif
+
 #endif //  DEFINES_H

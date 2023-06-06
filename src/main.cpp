@@ -31,7 +31,7 @@ void doC()
 //BLDCDriver6PWM driver = BLDCDriver6PWM( BLDC_BH_PIN,BLDC_BL_PIN,  BLDC_GH_PIN,BLDC_GL_PIN,  BLDC_YH_PIN,BLDC_YL_PIN );
 
 
-#ifdef DEBUG_SERIAL
+#ifdef DEBUG_STLINK
   #include <RTTStream.h>
   RTTStream rtt;
 #endif
@@ -84,8 +84,14 @@ void setup()
 {
   oKeepOn.Init();
   oKeepOn.Set(true);  // now we can release the on button :-)
-
   oOnOff.Init();
+
+  #ifdef DEBUG_UART
+    DEBUG_UART.begin(DEBUG_UART_BAUD);
+  #endif
+
+  OUTLN("Split Hoverboards with C++ SimpleFOC :-)")
+
   
   for (int i=0; i<LED_Count; i++) 
   {
@@ -104,15 +110,6 @@ void setup()
 
   //if (!driver.init())  LedError(5);
 
-  #ifdef HOVER_SERIAL
-    Serial2.begin(HOVER_SERIAL_BAUD);
-    //robo using HOVER_SERIAL instead of DEBUG_SERIAL=ST-Link
-    Serial2.println("Split Hoverboards with C++ SimpleFOC :-)");
-  #endif
-
-  #ifdef DEBUG_SERIAL
-    DEBUG_SERIAL.println("Split Hoverboards with C++ SimpleFOC :-)");
-  #endif
 
 }
 
@@ -145,10 +142,11 @@ void loop()
 
 
   if (oOnOff.Get()) oKeepOn.Set(false);
-  
-  #ifdef HOVER_SERIAL //robo using HOVER_SERIAL instead of DEBUG_SERIAL=ST-Link
-    for (int i=0; i<HALL_Count; i++)  {Serial2.print(aoHall[i].Get()); Serial2.print("  ");}
-    Serial2.print(sensor.getAngle());Serial2.print("  "); Serial2.print(sensor.getVelocity());Serial2.print("  ");
-    Serial2.println();
-  #endif
+
+  DEBUG( 
+    for (int i=0; i<HALL_Count; i++)  OUT2T(i,aoHall[i].Get())
+    OUT2T("angle",sensor.getAngle()) 
+    OUT2("speed",sensor.getVelocity())
+    OUTLN()
+  )
 }

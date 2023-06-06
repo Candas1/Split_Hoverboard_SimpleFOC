@@ -10,16 +10,16 @@
 #define LAYOUT_2_5	// NOT READY !!! https://github.com/RoboDurden/Hoverboard-Firmware-Hack-Gen2.x/issues/11
 
 // SEGGER RTT Debug
-//#define DEBUG_SERIAL rtt              // Uncomment to enable DEBUG
-#ifdef DEBUG_SERIAL
+//#define DEBUG_STLINK rtt              // Uncomment to enable DEBUG over stlink dongle
+#ifdef DEBUG_STLINK
   #undef Serial
   #define Serial rtt
 #endif
 
-// Hover serial protocol
-#define HOVER_SERIAL                    // Send commands to the mainboard and receive feedback
-#ifdef HOVER_SERIAL
-  #define HOVER_SERIAL_BAUD   115200    // [-] Baud rate for HoverSerial (used to communicate with the hoverboard)
+// log debug output over master/slave uart
+#define DEBUG_UART  Serial2
+#ifdef DEBUG_UART
+  #define DEBUG_UART_BAUD   115200    // [-] Baud rate for HoverSerial (used to communicate with the hoverboard)
 #endif
 
 #define TIME_SEND           100         // [ms] Sending time interval
