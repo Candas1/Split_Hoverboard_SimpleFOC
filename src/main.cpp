@@ -106,7 +106,7 @@ void loop()
   if (iTime < 5)
     for (int i=0; i<LED_Count; i++)  aoLed[i].Set( aoHall[i].Get() );
   else if (iTime < 6 || iTime >= 11)
-    for (int i=0; i<LED_Count; i++)  aoLed[i].Set( ((iNow+i*100)%200) < 100 );
+    for (int i=0; i<LED_Count; i++)  aoLed[i].Set( (iNow%200) < 100 );
   else if (iTime < 11)
   {
     int iPos = ((int)ABS(5*sensor.getAngle())) % HALL_Count;
