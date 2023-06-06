@@ -28,7 +28,7 @@ void doC()
 }
 
 
-//BLDCDriver6PWM driver = BLDCDriver6PWM( BLDC_BH_PIN,BLDC_BL_PIN,  BLDC_GH_PIN,BLDC_GL_PIN,  BLDC_YH_PIN,BLDC_YL_PIN );
+BLDCDriver6PWM driver = BLDCDriver6PWM( BLDC_BH_PIN,BLDC_BL_PIN,  BLDC_GH_PIN,BLDC_GL_PIN,  BLDC_YH_PIN,BLDC_YL_PIN );
 
 
 #ifdef DEBUG_STLINK
@@ -71,10 +71,12 @@ void LedError(int iError)
 {
   for (int j=0; j<iError; j++)
   {
-    if (j)  delay(500);
-    for (int i=0; i<LED_Count; i++) aoLed[i].Set(HIGH);
-    delay(500);
-    for (int i=0; i<LED_Count; i++) aoLed[i].Set(LOW);
+    if (j)  delay(100);
+    oLedRed.Set(HIGH);
+    //for (int i=0; i<LED_Count; i++) aoLed[i].Set(HIGH);
+    delay(100);
+    //for (int i=0; i<LED_Count; i++) aoLed[i].Set(HIGH);
+    oLedRed.Set(LOW);
   }
 
 }
@@ -97,7 +99,7 @@ void setup()
   {
     aoLed[i].Init();
     aoLed[i].Set(HIGH);
-    delay(500);
+    delay(300);
     aoLed[i].Set(LOW);
   }
 
@@ -108,7 +110,7 @@ void setup()
   // hardware interrupt enable
   sensor.enableInterrupts(doA, doB, doC);
 
-  //if (!driver.init())  LedError(5);
+  if (!driver.init())  LedError(10);
 
 
 }
