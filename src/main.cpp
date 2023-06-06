@@ -41,24 +41,27 @@ class CIO
 {	
 private:
 	int m_iPin;
+	int m_iType;  // OUTPUT, INPUT, INPUT_PULLUP, INPUT_PULLDOWN
 public:
-	CIO(int iPin);
-	void Setup(int iType = INPUT_PULLUP);
+	CIO(int iPin, int iType);
+	void Init();
 	void Set(bool bOn = true);
 	bool Get(void);
 };
 
-CIO::CIO(int iPin){	m_iPin = iPin;  }
-void CIO::Setup(int iType){  pinMode(m_iPin, iType);  }	
+CIO::CIO(int iPin, int iType=INPUT){	m_iPin = iPin;  m_iType = iType;}
+void CIO::Init(){  pinMode(m_iPin, m_iType);  }	
 void CIO::Set(bool bOn){ digitalWrite(m_iPin,bOn); }	
 bool CIO::Get(void){  return digitalRead(m_iPin); }
 
+CIO oKeepOn = CIO(SELF_HOLD_PIN,OUTPUT);
+CIO oOnOff = CIO(BUTTON_PIN);
 
-CIO oLedGreen   = CIO(LED_GREEN);
-CIO oLedOrange  = CIO(LED_ORANGE);
-CIO oLedRed     = CIO(LED_RED);
+CIO oLedGreen   = CIO(LED_GREEN,OUTPUT);
+CIO oLedOrange  = CIO(LED_ORANGE,OUTPUT);
+CIO oLedRed     = CIO(LED_RED,OUTPUT);
 
-CIO aoLed[5] = {oLedGreen, oLedOrange, oLedRed, CIO(UPPER_LED_PIN), CIO(LOWER_LED_PIN) };
+CIO aoLed[5] = {oLedGreen, oLedOrange, oLedRed, CIO(UPPER_LED_PIN,OUTPUT), CIO(LOWER_LED_PIN,OUTPUT) };
 #define LED_Count 3
 
 CIO aoHall[3] = {CIO(HALL_A_PIN), CIO(HALL_B_PIN), CIO(HALL_C_PIN) };
@@ -77,17 +80,22 @@ void LedError(int iError)
 }
 
 // ########################## SETUP ##########################
-void setup(){
+void setup()
+{
+  oKeepOn.Init();
+  oKeepOn.Set(true);  // now we can release the on button :-)
+
+  oOnOff.Init();
   
   for (int i=0; i<LED_Count; i++) 
   {
-    aoLed[i].Setup(OUTPUT);
+    aoLed[i].Init();
     aoLed[i].Set(HIGH);
     delay(500);
     aoLed[i].Set(LOW);
   }
 
-  for (int i=0; i<HALL_Count; i++)  aoHall[i].Setup(INPUT);
+  for (int i=0; i<HALL_Count; i++)  aoHall[i].Init();
 
   // init5ialize sensor hardware
   sensor.init();
@@ -135,6 +143,9 @@ void loop()
   if (iTimeSend > iNow) return;
   iTimeSend = iNow + TIME_SEND;
 
+
+  if (oOnOff.Get()) oKeepOn.Set(false);
+  
   #ifdef HOVER_SERIAL //robo using HOVER_SERIAL instead of DEBUG_SERIAL=ST-Link
     for (int i=0; i<HALL_Count; i++)  {Serial2.print(aoHall[i].Get()); Serial2.print("  ");}
     Serial2.print(sensor.getAngle());Serial2.print("  "); Serial2.print(sensor.getVelocity());Serial2.print("  ");
