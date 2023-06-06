@@ -28,7 +28,7 @@ void doC()
 }
 
 
-BLDCDriver6PWM driver = BLDCDriver6PWM( BLDC_BH_PIN,BLDC_BL_PIN,  BLDC_GH_PIN,BLDC_GL_PIN,  BLDC_YH_PIN,BLDC_YL_PIN );
+//BLDCDriver6PWM driver = BLDCDriver6PWM( BLDC_BH_PIN,BLDC_BL_PIN,  BLDC_GH_PIN,BLDC_GL_PIN,  BLDC_YH_PIN,BLDC_YL_PIN );
 
 
 #ifdef DEBUG_SERIAL
@@ -94,16 +94,16 @@ void setup(){
   // hardware interrupt enable
   sensor.enableInterrupts(doA, doB, doC);
 
-if (!driver.init())  LedError(5);
+  //if (!driver.init())  LedError(5);
 
   #ifdef HOVER_SERIAL
     Serial2.begin(HOVER_SERIAL_BAUD);
     //robo using HOVER_SERIAL instead of DEBUG_SERIAL=ST-Link
-    Serial2.println("Hoverboard Serial v1.0, this is HOVER_SERIAL");
+    Serial2.println("Split Hoverboards with C++ SimpleFOC :-)");
   #endif
 
   #ifdef DEBUG_SERIAL
-    DEBUG_SERIAL.println("Hoverboard Serial v1.0");
+    DEBUG_SERIAL.println("Split Hoverboards with C++ SimpleFOC :-)");
   #endif
 
 }
@@ -137,7 +137,7 @@ void loop()
 
   #ifdef HOVER_SERIAL //robo using HOVER_SERIAL instead of DEBUG_SERIAL=ST-Link
     for (int i=0; i<HALL_Count; i++)  {Serial2.print(aoHall[i].Get()); Serial2.print("  ");}
-    //Serial2.print(sensor.getAngle());Serial2.print("  "); Serial2.print(sensor.getVelocity());Serial2.print("  ");
+    Serial2.print(sensor.getAngle());Serial2.print("  "); Serial2.print(sensor.getVelocity());Serial2.print("  ");
     Serial2.println();
   #endif
 }

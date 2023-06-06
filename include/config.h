@@ -17,7 +17,7 @@
 #endif
 
 // Hover serial protocol
-//#define HOVER_SERIAL                    // Send commands to the mainboard and receive feedback
+#define HOVER_SERIAL                    // Send commands to the mainboard and receive feedback
 #ifdef HOVER_SERIAL
   #define HOVER_SERIAL_BAUD   115200    // [-] Baud rate for HoverSerial (used to communicate with the hoverboard)
 #endif
