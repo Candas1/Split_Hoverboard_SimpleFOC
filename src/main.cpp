@@ -27,6 +27,10 @@ void doC()
   //Serial2.print("C");
 }
 
+
+BLDCDriver6PWM driver = BLDCDriver6PWM( BLDC_BH_PIN,BLDC_BL_PIN,  BLDC_GH_PIN,BLDC_GL_PIN,  BLDC_YH_PIN,BLDC_YL_PIN );
+
+
 #ifdef DEBUG_SERIAL
   #include <RTTStream.h>
   RTTStream rtt;
@@ -60,6 +64,17 @@ CIO aoLed[5] = {oLedGreen, oLedOrange, oLedRed, CIO(UPPER_LED_PIN), CIO(LOWER_LE
 CIO aoHall[3] = {CIO(HALL_A_PIN), CIO(HALL_B_PIN), CIO(HALL_C_PIN) };
 #define HALL_Count 3
 
+void LedError(int iError)
+{
+  for (int j=0; j<iError; j++)
+  {
+    if (j)  delay(500);
+    for (int i=0; i<LED_Count; i++) aoLed[i].Set(HIGH);
+    delay(500);
+    for (int i=0; i<LED_Count; i++) aoLed[i].Set(LOW);
+  }
+
+}
 
 // ########################## SETUP ##########################
 void setup(){
@@ -78,6 +93,8 @@ void setup(){
   sensor.init();
   // hardware interrupt enable
   sensor.enableInterrupts(doA, doB, doC);
+
+if (!driver.init())  LedError(5);
 
   #ifdef HOVER_SERIAL
     Serial2.begin(HOVER_SERIAL_BAUD);
