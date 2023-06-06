@@ -15,14 +15,13 @@ HallSensor class working and three led blinking while rotating the (slave) wheel
 #define LAYOUT_2_5	// NOT READY !!! https://github.com/RoboDurden/Hoverboard-Firmware-Hack-Gen2.x/issues/11
 ```
 
-#### You have to choose the GD32F103C8 or GD32F103C6 enviroment, otherwise the code will hang at startup
-
 #### Big thanks to https://github.com/CommunityGD32Cores/ArduinoCore-GD32 for making it possible to build a firmware based on https://github.com/simplefoc :-)
 
 ### How to use
 * Install [Vscode](https://code.visualstudio.com/download)
 * Install [Platformio](https://platformio.org/platformio-ide) from the website or from VSCODE's extensions
 * Download the project or use git to clone this repository in VSCODE
-* Select the environment that matches with your chip in platformio's bottom bar (For GD32F108C8 and STM32FEBK chips, STM32F103 should work) <br>
-* [Unlock](https://github.com/EFeru/hoverboard-firmware-hack-FOC/wiki/How-to-Unlock-MCU-Flash) the chip
+* Select the GD32F103C8 or GD32F103C6 environment that matches with your chip in platformio's bottom bar
+*  [Unlock](https://github.com/EFeru/hoverboard-firmware-hack-FOC/wiki/How-to-Unlock-MCU-Flash) the chip
 * Press the 'PlatformIO:Upload' button (bottom left in vscode) to build and upload the firmwware
+
