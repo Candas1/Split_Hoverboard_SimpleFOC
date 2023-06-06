@@ -20,7 +20,6 @@ HallSensor class working and three led blinking while rotating the (slave) wheel
 #### Big thanks to https://github.com/CommunityGD32Cores/ArduinoCore-GD32 for making it possible to build a firmware based on https://github.com/simplefoc :-)
 
 ### How to use
-I am only using Platformio, I cannot support other IDEs.<br>
 * Install [Vscode](https://code.visualstudio.com/download)
 * Install [Platformio](https://platformio.org/platformio-ide) from the website or from VSCODE's extensions
 * Download the project or use git to clone this repository in VSCODE
