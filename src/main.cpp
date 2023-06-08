@@ -151,6 +151,17 @@ void loop()
 
   if (oOnOff.Get()) oKeepOn.Set(false);
 
+  #ifdef SERIALDEBUG
+    if (SERIALDEBUG.available()) 
+    {
+      while (SERIALDEBUG.available() )
+      {
+        SERIALDEBUG.write(SERIALDEBUG.read());
+      }
+      SERIALDEBUG.println();
+    }
+  #endif
+
   DEBUG( 
     for (int i=0; i<HALL_Count; i++)  OUT2T(i,aoHall[i].Get())
     OUT2T("angle",sensor.getAngle()) 

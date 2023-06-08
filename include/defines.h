@@ -41,16 +41,17 @@
 #define MAP(x, in_min, in_max, out_min, out_max) (((((x) - (in_min)) * ((out_max) - (out_min))) / ((in_max) - (in_min))) + (out_min))
 
 #ifdef DEBUG_UART
-	#ifdef DEBUG_UART
-		#define SERIALDEBUG DEBUG_UART
-	#endif	
+	#define SERIALDEBUG DEBUG_UART
+#else
 	#ifdef DEBUG_STLINK
 		#define SERIALDEBUG DEBUG_STLINK
 	#endif	
+#endif	
+#ifdef SERIALDEBUG
 	#define DEBUG(code)	{code}
 	#define OUT(s)	{SERIALDEBUG.print(s);}
 	#define OUT2(s,i)	{SERIALDEBUG.print(s);SERIALDEBUG.print(": ");SERIALDEBUG.print(i);}
-	#define OUT2T(s,i)	{SERIALDEBUG.print(s);SERIALDEBUG.print(": ");SERIALDEBUG.print(i);SERIALDEBUG.print("  ");}
+	#define OUT2T(s,i)	{SERIALDEBUG.print(s);SERIALDEBUG.print(": ");SERIALDEBUG.print(i);SERIALDEBUG.print("\t");}
 	#define OUTLN(s)	{SERIALDEBUG.println(s);}
 #else
 	#define DEBUG(code)
