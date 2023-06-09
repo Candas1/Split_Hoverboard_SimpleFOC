@@ -3,6 +3,14 @@
 #include <Defines.h>
 #include <SimpleFOC.h>
 
+/*
+#ifdef DEBUG_UART // use Serial1 with differen rx/tx pins as DEBUG_UART
+  HardwareSerial oSerialSteer(PB7, PB6,0);  // 1 = uart_index = Serial2 ; 0 = uart_index = Serial1
+  #undef DEBUG_UART
+  #define DEBUG_UART oSerialSteer
+#endif
+*/
+
 // Hall sensor instance
 // HallSensor(int hallA, int hallB , int hallC , int pp)
 //  - hallA, hallB, hallC    - HallSensor A, B and C pins
@@ -14,17 +22,17 @@ HallSensor sensor = HallSensor(HALL_A_PIN, HALL_B_PIN, HALL_C_PIN, 15);
 void doA()
 {
   sensor.handleA();
-  //Serial2.print("A");
+  //OUT("A")
 }
 void doB()
 {
   sensor.handleB();
-  //Serial2.print("B");
+  //OUT("B")
 }
 void doC()
 {
   sensor.handleC();
-  //Serial2.print("C");
+  //OUT("C")
 }
 
 
@@ -54,6 +62,9 @@ void CIO::Init(){  pinMode(m_iPin, m_iType);  }
 void CIO::Set(bool bOn){ digitalWrite(m_iPin,bOn); }	
 bool CIO::Get(void){  return digitalRead(m_iPin); }
 
+//CIO oPB6   = CIO(PB6,OUTPUT);
+
+
 CIO oKeepOn = CIO(SELF_HOLD_PIN,OUTPUT);
 CIO oOnOff = CIO(BUTTON_PIN);
 
@@ -62,7 +73,7 @@ CIO oLedOrange  = CIO(LED_ORANGE,OUTPUT);
 CIO oLedRed     = CIO(LED_RED,OUTPUT);
 
 CIO aoLed[5] = {oLedGreen, oLedOrange, oLedRed, CIO(UPPER_LED_PIN,OUTPUT), CIO(LOWER_LED_PIN,OUTPUT) };
-#define LED_Count 3
+#define LED_Count 5
 
 CIO aoHall[3] = {CIO(HALL_A_PIN), CIO(HALL_B_PIN), CIO(HALL_C_PIN) };
 #define HALL_Count 3
@@ -75,35 +86,76 @@ void LedError(int iError)
   {
     if (j)  delay(100);
     oLedRed.Set(HIGH);
-    //for (int i=0; i<LED_Count; i++) aoLed[i].Set(HIGH);
     delay(100);
-    //for (int i=0; i<LED_Count; i++) aoLed[i].Set(HIGH);
     oLedRed.Set(LOW);
   }
+
+}
+
+unsigned long iI2c = 0;
+// function that executes whenever data is requested by master
+// this function is registered as an event, see setup()
+void requestEvent() 
+{
+  iI2c++;
+  OUTLN("an i2c request")
+
+  //SerialWrite(Wire,oC);
+  Wire.write(1);
+  Wire.write(2);
+  Wire.write(3);  // CRC8((byte*)&oC,sizeof oC)
+}
+
+void receiveEvent(int iReceived) 
+{
+  iI2c++;
+  OUT2T("\ni2c received",iReceived)
+
+  char temp[iReceived+1];
+  temp[iReceived] = 0;
+  for (int i=0; i<iReceived; i++) temp[i] = Wire.read();
+  OUTLN(temp);
 
 }
 
 // ########################## SETUP ##########################
 void setup()
 {
+
+  int iRX0old = PA10;
+  int iTX0old = PA9;
+
+  int iRX0new = PB7;
+  int iTX0new = PB6;
+
+  int iPinRX0 = RX0;
+  int iPinTX0 = TX0;
+
   oKeepOn.Init();
   oKeepOn.Set(true);  // now we can release the on button :-)
   oOnOff.Init();
 
+  Wire.begin(8);                // join i2c bus with address #8
+  Wire.onReceive(receiveEvent); // register event
+
+
   #ifdef DEBUG_UART
     DEBUG_UART.begin(DEBUG_UART_BAUD);
   #endif
+  //Serial2.begin(DEBUG_UART_BAUD); // when using Serial1 as DEBUG_UART
 
   OUTLN("Split Hoverboards with C++ SimpleFOC :-)")
 
+  //oPB6.Init();
   
   for (int i=0; i<LED_Count; i++) 
   {
     aoLed[i].Init();
     aoLed[i].Set(HIGH);
-    delay(300);
+    delay(100);
     aoLed[i].Set(LOW);
   }
+
 
   for (int i=0; i<HALL_Count; i++)  aoHall[i].Init();
 
@@ -128,22 +180,24 @@ void loop()
 
   unsigned long iNow = millis();
 
+  //oPB6.Set((iNow%100) < 50);
+
   //aoLed[0].Set((iNow%1000) < 500);
   //aoLed[1].Set(aoHall[0].Get());
   //aoLed[0].Set(aoHall[0].Get() ? (iNow%200) < 100 : (iNow%1000) < 500);
 
   unsigned int iTime = (iNow/1000)%12;
   if (iTime < 5)
-    for (int i=0; i<LED_Count; i++)  aoLed[i].Set( aoHall[i].Get() );
+    for (int i=0; i<HALL_Count; i++)  aoLed[i].Set( aoHall[i].Get() );
   else if (iTime < 6 || iTime >= 11)
     for (int i=0; i<LED_Count; i++)  aoLed[i].Set( (iNow%200) < 100 );
   else if (iTime < 11)
   {
     int iPos = ((int)ABS(5*sensor.getAngle())) % HALL_Count;
-    for (int i=0; i<LED_Count; i++)  aoLed[i].Set(i==iPos);
+    for (int i=0; i<HALL_Count; i++)  aoLed[i].Set(i==iPos);
   }
 
-  #ifdef SERIALDEBUG
+  #ifdef SERIALDEBUGXX
     if (SERIALDEBUG.available()) 
     {
       while (SERIALDEBUG.available() )
@@ -161,7 +215,7 @@ void loop()
 
   if (oOnOff.Get()) oKeepOn.Set(false);
 
-  #ifdef SERIALDEBUGXX
+  #ifdef SERIALDEBUG
     if (SERIALDEBUG.available()) 
     {
       while (SERIALDEBUG.available() )
@@ -173,10 +227,13 @@ void loop()
   #endif
 
   DEBUG( 
-    OUT2T("\nGD32",iNow) 
-//    for (int i=0; i<HALL_Count; i++)  OUT2T(i,aoHall[i].Get())
-//    OUT2T("angle",sensor.getAngle()) 
-//    OUT2("speed",sensor.getVelocity())
+    OUT2T("GD32",iNow) 
+    for (int i=0; i<HALL_Count; i++)  OUT2T(i,aoHall[i].Get())
+    OUT2T("angle",sensor.getAngle()) 
+    OUT2T("speed",sensor.getVelocity())
+    OUT2("iI2c",iI2c);
     OUTLN()
   )
+
+  //Serial2.println("test of the master/slave uart rx/tx PA3/PA2"); // when using Serial1 as DEBUG_UART
 }

@@ -18,6 +18,9 @@
 #ifdef LAYOUT_2_5
 	#include "defines_2-5.h"		// https://github.com/RoboDurden/Hoverboard-Firmware-Hack-Gen2.x/issues/11
 #endif
+#ifdef LAYOUT_2_NONE	// for testing the binary upload with no harmful pin definitions
+	#include "defines_2-x.h"
+#endif
 
 
 #define NO 0
