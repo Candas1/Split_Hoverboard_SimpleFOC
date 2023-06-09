@@ -1,4 +1,4 @@
-
+ 
 #define pin_LED 15
 
 void setup() 
@@ -11,7 +11,9 @@ void setup()
 
 unsigned long iNow = 0;
 unsigned long iTimeSend = 0;
-#define TIME_SEND 100
+#define TIME_SEND 15
+
+unsigned int iCounter = 0;
 void loop() 
 {
   iNow = millis();
@@ -26,11 +28,16 @@ void loop()
 
   if (Serial1.available()) // If anything comes in Serial1
   {       
-    Serial.write(Serial1.read());  // read it and send it out Serial (USB)
+    char c = Serial1.read();
+    Serial.write(c);  // read it and send it out Serial (USB)
+    //if (c == 10){Serial.print(iNow); Serial.print(":\t");}
   }
 
   if (iTimeSend > iNow) return;
   iTimeSend = iNow + TIME_SEND;
 
-  Serial1.print("hello from ESP32 S2 Mini");
+  Serial1.print(iCounter++);
+  Serial1.print("_");
+  Serial1.print(iNow);
+  Serial1.print("\t");
 }

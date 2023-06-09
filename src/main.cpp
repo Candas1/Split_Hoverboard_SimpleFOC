@@ -163,9 +163,10 @@ void loop()
   #endif
 
   DEBUG( 
-    for (int i=0; i<HALL_Count; i++)  OUT2T(i,aoHall[i].Get())
-    OUT2T("angle",sensor.getAngle()) 
-    OUT2("speed",sensor.getVelocity())
+    OUT2T("GD32",iNow) 
+//    for (int i=0; i<HALL_Count; i++)  OUT2T(i,aoHall[i].Get())
+//    OUT2T("angle",sensor.getAngle()) 
+//    OUT2("speed",sensor.getVelocity())
     OUTLN()
   )
 }

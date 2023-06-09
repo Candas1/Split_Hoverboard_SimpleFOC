@@ -32,10 +32,5 @@
 #define SELF_HOLD_PIN PB2
 
 // Button defines
-// on/off (POW) push-button. So also a connection (i guess with some smd resistor in between) to a MCU pin.
-#define BUTTON_PIN GPIO_PIN_2			// robo, based on Herleybob:defines.h
-#define BUTTON_PORT GPIOB						// robo, based on Herleybob:defines.h
-
-// Button defines
 // Usually used as INPUT but could be used as analog input if available on the pin to detect button press with low voltage batteries  
 #define BUTTON_PIN PA5
