@@ -11,7 +11,7 @@ void setup()
 
 unsigned long iNow = 0;
 unsigned long iTimeSend = 0;
-#define TIME_SEND 15
+#define TIME_SEND 5
 
 unsigned int iCounter = 0;
 void loop() 

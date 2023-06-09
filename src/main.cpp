@@ -143,6 +143,16 @@ void loop()
     for (int i=0; i<LED_Count; i++)  aoLed[i].Set(i==iPos);
   }
 
+  #ifdef SERIALDEBUGXX
+    if (SERIALDEBUG.available()) 
+    {
+      while (SERIALDEBUG.available() )
+      {
+        SERIALDEBUG.write(SERIALDEBUG.read());
+      }
+    }
+  #endif
+
 
 
   if (iTimeSend > iNow) return;
@@ -163,7 +173,7 @@ void loop()
   #endif
 
   DEBUG( 
-    OUT2T("GD32",iNow) 
+    OUT2T("\nGD32",iNow) 
 //    for (int i=0; i<HALL_Count; i++)  OUT2T(i,aoHall[i].Get())
 //    OUT2T("angle",sensor.getAngle()) 
 //    OUT2("speed",sensor.getVelocity())
