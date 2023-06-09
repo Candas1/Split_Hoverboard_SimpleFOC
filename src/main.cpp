@@ -143,7 +143,7 @@ void loop()
     for (int i=0; i<LED_Count; i++)  aoLed[i].Set(i==iPos);
   }
 
-  #ifdef SERIALDEBUGXX
+  #ifdef SERIALDEBUG
     if (SERIALDEBUG.available()) 
     {
       while (SERIALDEBUG.available() )
@@ -161,7 +161,7 @@ void loop()
 
   if (oOnOff.Get()) oKeepOn.Set(false);
 
-  #ifdef SERIALDEBUG
+  #ifdef SERIALDEBUGXX
     if (SERIALDEBUG.available()) 
     {
       while (SERIALDEBUG.available() )
