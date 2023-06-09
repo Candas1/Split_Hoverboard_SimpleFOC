@@ -111,7 +111,7 @@ void receiveEvent(int iReceived)
   iI2c++;
   OUT2T("\ni2c received",iReceived)
 
-  char temp[iReceived+1];
+  char temp[iReceived+2];
   temp[iReceived] = 0;
   for (int i=0; i<iReceived; i++) temp[i] = Wire.read();
   OUTLN(temp);
