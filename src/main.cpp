@@ -35,9 +35,10 @@ void doC()
   //OUT("C")
 }
 
-
+// BLDC motor & driver instance
+BLDCMotor motor = BLDCMotor(15);
 BLDCDriver6PWM driver = BLDCDriver6PWM( BLDC_BH_PIN,BLDC_BL_PIN,  BLDC_GH_PIN,BLDC_GL_PIN,  BLDC_YH_PIN,BLDC_YL_PIN );
-
+//LowPassFilter filter = LowPassFilter(0.01);
 
 #ifdef DEBUG_STLINK
   #include <RTTStream.h>
@@ -163,13 +164,39 @@ void setup()
   sensor.init();
   // hardware interrupt enable
   sensor.enableInterrupts(doA, doB, doC);
+  motor.linkSensor(&sensor);
 
+   // link the motor to the sensor
+  motor.linkSensor(&sensor);
+
+  // driver config
+  // power supply voltage [V]
+  driver.voltage_power_supply = 30;
+  driver.voltage_limit = 3;
   if (!driver.init())
   {
     LedError(10);
     for(int i=0; i<6; i++)  aoBLDC[i].Init();  // set back to input to free the blocked motor
-  }  
+  }
 
+  // link driver
+  motor.linkDriver(&driver);
+
+  // aligning voltage
+  motor.voltage_sensor_align = 0.5;
+  
+  // choose FOC modulation (optional)
+  motor.foc_modulation = FOCModulationType::Trapezoid_120;
+
+  // set motion control loop to be used
+  motor.controller = MotionControlType::torque;
+  motor.torque_controller = TorqueControlType::voltage;
+  motor.target = 1;
+
+  // initialize motor
+  motor.init();
+  // align sensor and start FOC
+  motor.initFOC();
 
 }
 
@@ -177,6 +204,18 @@ unsigned long iTimeSend = 0;
 void loop()
 {
   sensor.update();
+
+  // main FOC algorithm function
+  // the faster you run this function the better
+  // Arduino UNO loop  ~1kHz
+  // Bluepill loop ~10kHz 
+  motor.loopFOC();
+
+  // Motion control function
+  // velocity, position or voltage (defined in motor.controller)
+  // this function can be run at much lower frequency than loopFOC() function
+  // You can also use motor.move() and set the motor.target in the code
+  motor.move();
 
   unsigned long iNow = millis();
 
