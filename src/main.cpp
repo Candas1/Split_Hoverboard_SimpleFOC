@@ -38,7 +38,6 @@ void doC()
 // BLDC motor & driver instance
 BLDCMotor motor = BLDCMotor(15);
 BLDCDriver6PWM driver = BLDCDriver6PWM( BLDC_BH_PIN,BLDC_BL_PIN,  BLDC_GH_PIN,BLDC_GL_PIN,  BLDC_YH_PIN,BLDC_YL_PIN );
-//LowPassFilter filter = LowPassFilter(0.01);
 
 #ifdef DEBUG_STLINK
   #include <RTTStream.h>
@@ -93,31 +92,6 @@ void LedError(int iError)
 
 }
 
-unsigned long iI2c = 0;
-// function that executes whenever data is requested by master
-// this function is registered as an event, see setup()
-void requestEvent() 
-{
-  iI2c++;
-  OUTLN("an i2c request")
-
-  //SerialWrite(Wire,oC);
-  Wire.write(1);
-  Wire.write(2);
-  Wire.write(3);  // CRC8((byte*)&oC,sizeof oC)
-}
-
-void receiveEvent(int iReceived) 
-{
-  iI2c++;
-  OUT2T("\ni2c received",iReceived)
-
-  char temp[iReceived+2];
-  temp[iReceived] = 0;
-  for (int i=0; i<iReceived; i++) temp[i] = Wire.read();
-  OUTLN(temp);
-
-}
 
 // ########################## SETUP ##########################
 void setup()
@@ -135,10 +109,6 @@ void setup()
   oKeepOn.Init();
   oKeepOn.Set(true);  // now we can release the on button :-)
   oOnOff.Init();
-
-  Wire.begin(8);                // join i2c bus with address #8
-  Wire.onReceive(receiveEvent); // register event
-
 
   #ifdef DEBUG_UART
     DEBUG_UART.begin(DEBUG_UART_BAUD);
@@ -172,7 +142,7 @@ void setup()
   // driver config
   // power supply voltage [V]
   driver.voltage_power_supply = 30;
-  driver.voltage_limit = 5;
+  driver.voltage_limit = 10;
   if (!driver.init())
   {
     LedError(10);
@@ -267,7 +237,6 @@ void loop()
     for (int i=0; i<HALL_Count; i++)  OUT2T(i,aoHall[i].Get())
     OUT2T("angle",sensor.getAngle()) 
     OUT2T("speed",sensor.getVelocity())
-    OUT2("iI2c",iI2c);
     OUTLN()
   )
 
