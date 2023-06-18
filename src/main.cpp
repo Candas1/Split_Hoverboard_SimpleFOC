@@ -62,9 +62,6 @@ void CIO::Init(){  pinMode(m_iPin, m_iType);  }
 void CIO::Set(bool bOn){ digitalWrite(m_iPin,bOn); }	
 bool CIO::Get(void){  return digitalRead(m_iPin); }
 
-//CIO oPB6   = CIO(PB6,OUTPUT);
-
-
 CIO oKeepOn = CIO(SELF_HOLD_PIN,OUTPUT);
 CIO oOnOff = CIO(BUTTON_PIN);
 
@@ -97,15 +94,6 @@ void LedError(int iError)
 void setup()
 {
 
-  int iRX0old = PA10;
-  int iTX0old = PA9;
-
-  int iRX0new = PB7;
-  int iTX0new = PB6;
-
-  int iPinRX0 = RX0;
-  int iPinTX0 = TX0;
-
   oKeepOn.Init();
   oKeepOn.Set(true);  // now we can release the on button :-)
   oOnOff.Init();
@@ -117,8 +105,6 @@ void setup()
 
   OUTLN("Split Hoverboards with C++ SimpleFOC :-)")
 
-  //oPB6.Init();
-  
   for (int i=0; i<LED_Count; i++) 
   {
     aoLed[i].Init();
@@ -186,8 +172,6 @@ void loop()
 
   unsigned long iNow = millis();
 
-  //oPB6.Set((iNow%100) < 50);
-
   //aoLed[0].Set((iNow%1000) < 500);
   //aoLed[1].Set(aoHall[0].Get());
   //aoLed[0].Set(aoHall[0].Get() ? (iNow%200) < 100 : (iNow%1000) < 500);
@@ -203,34 +187,11 @@ void loop()
     for (int i=0; i<HALL_Count; i++)  aoLed[i].Set(i==iPos);
   }
 
-  #ifdef SERIALDEBUGXX
-    if (SERIALDEBUG.available()) 
-    {
-      while (SERIALDEBUG.available() )
-      {
-        SERIALDEBUG.write(SERIALDEBUG.read());
-      }
-    }
-  #endif
-
-
-
   if (iTimeSend > iNow) return;
   iTimeSend = iNow + TIME_SEND;
 
 
   if (oOnOff.Get()) oKeepOn.Set(false);
-
-  #ifdef SERIALDEBUG
-    if (SERIALDEBUG.available()) 
-    {
-      while (SERIALDEBUG.available() )
-      {
-        SERIALDEBUG.write(SERIALDEBUG.read());
-      }
-      SERIALDEBUG.println();
-    }
-  #endif
 
   DEBUG( 
     OUT2T("GD32",iNow) 
