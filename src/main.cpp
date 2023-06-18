@@ -172,7 +172,7 @@ void setup()
   // driver config
   // power supply voltage [V]
   driver.voltage_power_supply = 30;
-  driver.voltage_limit = 3;
+  driver.voltage_limit = 5;
   if (!driver.init())
   {
     LedError(10);
@@ -183,7 +183,7 @@ void setup()
   motor.linkDriver(&driver);
 
   // aligning voltage
-  motor.voltage_sensor_align = 0.5;
+  motor.voltage_sensor_align = 1;
   
   // choose FOC modulation (optional)
   motor.foc_modulation = FOCModulationType::Trapezoid_120;
@@ -191,7 +191,6 @@ void setup()
   // set motion control loop to be used
   motor.controller = MotionControlType::torque;
   motor.torque_controller = TorqueControlType::voltage;
-  motor.target = 1;
 
   // initialize motor
   motor.init();
@@ -203,8 +202,6 @@ void setup()
 unsigned long iTimeSend = 0;
 void loop()
 {
-  sensor.update();
-
   // main FOC algorithm function
   // the faster you run this function the better
   // Arduino UNO loop  ~1kHz
@@ -215,7 +212,7 @@ void loop()
   // velocity, position or voltage (defined in motor.controller)
   // this function can be run at much lower frequency than loopFOC() function
   // You can also use motor.move() and set the motor.target in the code
-  motor.move();
+  motor.move(2);
 
   unsigned long iNow = millis();
 
