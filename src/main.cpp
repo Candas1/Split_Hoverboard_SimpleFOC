@@ -100,7 +100,13 @@ void setup()
 
   #ifdef DEBUG_UART
     DEBUG_UART.begin(DEBUG_UART_BAUD);
+    SimpleFOCDebug::enable(&DEBUG_UART);
   #endif
+
+  #ifdef DEBUG_STLINK
+    SimpleFOCDebug::enable(&rtt);
+  #endif
+
   //Serial2.begin(DEBUG_UART_BAUD); // when using Serial1 as DEBUG_UART
 
   OUTLN("Split Hoverboards with C++ SimpleFOC :-)")
@@ -142,17 +148,24 @@ void setup()
   motor.voltage_sensor_align = 1;
   
   // choose FOC modulation (optional)
-  motor.foc_modulation = FOCModulationType::Trapezoid_120;
+  motor.foc_modulation = FOCModulationType::Trapezoid_150;
 
   // set motion control loop to be used
   motor.controller = MotionControlType::torque;
   motor.torque_controller = TorqueControlType::voltage;
+  
+  #ifdef DEBUG_UART
+    motor.useMonitoring(DEBUG_UART);
+  #endif
+
+  #ifdef DEBUG_STLINK
+    motor.useMonitoring(rtt);
+  #endif
 
   // initialize motor
   motor.init();
-  // align sensor and start FOC
-  motor.initFOC();
-
+  motor.initFOC(5.24,Direction::CCW); // Start FOC without alignment
+  //motor.initFOC();// align sensor and start FOC
 }
 
 unsigned long iTimeSend = 0;

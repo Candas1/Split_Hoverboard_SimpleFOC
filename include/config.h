@@ -12,10 +12,6 @@
 
 // SEGGER RTT Debug
 //#define DEBUG_STLINK rtt              // Uncomment to enable DEBUG over stlink dongle
-#ifdef DEBUG_STLINK
-  #undef Serial
-  #define Serial rtt
-#endif
 
 // log debug output over master/slave uart
 #define DEBUG_UART  Serial2
