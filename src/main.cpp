@@ -139,6 +139,8 @@ void setup()
   {
     LedError(10);
     for(int i=0; i<6; i++)  aoBLDC[i].Init();  // set back to input to free the blocked motor
+  }else{
+    driver.enable();
   }
 
   // link driver
@@ -164,7 +166,7 @@ void setup()
 
   // initialize motor
   motor.init();
-  motor.initFOC(2.09,Direction::CCW); // Start FOC without alignment
+  motor.initFOC(2.00,Direction::CCW); // Start FOC without alignment
   //motor.initFOC();// align sensor and start FOC
 }
 
@@ -181,7 +183,8 @@ void loop()
   // velocity, position or voltage (defined in motor.controller)
   // this function can be run at much lower frequency than loopFOC() function
   // You can also use motor.move() and set the motor.target in the code
-  motor.move(2);
+  float fSpeed = 2.0 * (ABS(	(float)((millis()/50+100) % 400) - 200) - 100)/100;
+  motor.move(fSpeed);
 
   unsigned long iNow = millis();
 
