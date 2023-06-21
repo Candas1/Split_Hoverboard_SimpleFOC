@@ -164,7 +164,7 @@ void setup()
 
   // initialize motor
   motor.init();
-  motor.initFOC(5.24,Direction::CCW); // Start FOC without alignment
+  motor.initFOC(2.09,Direction::CCW); // Start FOC without alignment
   //motor.initFOC();// align sensor and start FOC
 }
 
