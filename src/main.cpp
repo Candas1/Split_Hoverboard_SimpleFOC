@@ -150,7 +150,7 @@ void setup()
   motor.voltage_sensor_align = 1;
   
   // choose FOC modulation (optional)
-  motor.foc_modulation = FOCModulationType::Trapezoid_150;
+  motor.foc_modulation = FOCModulationType::SinePWM;
 
   // set motion control loop to be used
   motor.controller = MotionControlType::torque;
@@ -166,7 +166,7 @@ void setup()
 
   // initialize motor
   motor.init();
-  motor.initFOC(2.00,Direction::CCW); // Start FOC without alignment
+  motor.initFOC(2.09,Direction::CCW); // Start FOC without alignment
   //motor.initFOC();// align sensor and start FOC
 }
 
@@ -183,7 +183,7 @@ void loop()
   // velocity, position or voltage (defined in motor.controller)
   // this function can be run at much lower frequency than loopFOC() function
   // You can also use motor.move() and set the motor.target in the code
-  float fSpeed = 2.0 * (ABS(	(float)((millis()/50+100) % 400) - 200) - 100)/100;
+  float fSpeed = 5.0 * (ABS(	(float)((millis()/50+100) % 400) - 200) - 100)/100;
   motor.move(fSpeed);
 
   unsigned long iNow = millis();
