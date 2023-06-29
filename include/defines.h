@@ -55,13 +55,15 @@
 	#define OUT(s)	{SERIALDEBUG.print(s);}
 	#define OUT2(s,i)	{SERIALDEBUG.print(s);SERIALDEBUG.print(": ");SERIALDEBUG.print(i);}
 	#define OUT2T(s,i)	{SERIALDEBUG.print(s);SERIALDEBUG.print(": ");SERIALDEBUG.print(i);SERIALDEBUG.print("\t");}
-	#define OUTLN(s)	{SERIALDEBUG.println(s);}
+	#define OUT2N(s,i)	{SERIALDEBUG.print(s);SERIALDEBUG.print(": ");SERIALDEBUG.print(i);SERIALDEBUG.println();}
+	#define OUTN(s)	{SERIALDEBUG.println(s);}
 #else
 	#define DEBUG(code)
 	#define OUT(s)
 	#define OUT2(s)
 	#define OUT2T(s)
-	#define OUTLN(s)
+	#define OUT2N(s)
+	#define OUTN(s)
 #endif
 
 #endif //  DEFINES_H
