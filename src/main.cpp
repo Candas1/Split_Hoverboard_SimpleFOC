@@ -3,6 +3,11 @@
 #include <Defines.h>
 #include <SimpleFOC.h>
 
+#ifdef DEBUG_STLINK
+  #include <RTTStream.h>
+  RTTStream rtt;
+#endif
+
 /*
 #ifdef DEBUG_UART // use Serial1 with differen rx/tx pins as DEBUG_UART
   HardwareSerial oSerialSteer(PB7, PB6,0);  // 1 = uart_index = Serial2 ; 0 = uart_index = Serial1
@@ -11,41 +16,23 @@
 #endif
 */
 
-// Hall sensor instance
-// HallSensor(int hallA, int hallB , int hallC , int pp)
-//  - hallA, hallB, hallC    - HallSensor A, B and C pins
-//  - pp                     - pole pairs
-HallSensor sensor = HallSensor(HALL_A_PIN, HALL_B_PIN, HALL_C_PIN, 15);
+// HallSensor(int hallA, int hallB , int hallC , int pp)  = HallSensor A, B and C pins , pp = pole pairs
+HallSensor sensor = HallSensor(HALL_A_PIN, HALL_B_PIN, HALL_C_PIN, BLDC_POLE_PAIRS);
 
 // Interrupt routine initialization
-// channel A and B callbacks
-void doA()
-{
-  sensor.handleA();
-  //OUT("A")
-}
-void doB()
-{
-  sensor.handleB();
-  //OUT("B")
-}
-void doC()
-{
-  sensor.handleC();
-  //OUT("C")
-}
+void doA()  { sensor.handleA(); } // channel callbacks
+void doB()  { sensor.handleB(); }
+void doC()  { sensor.handleC(); }
 
 // BLDC motor & driver instance
-BLDCMotor motor = BLDCMotor(15);
+BLDCMotor motor = BLDCMotor(BLDC_POLE_PAIRS);
 BLDCDriver6PWM driver = BLDCDriver6PWM( BLDC_BH_PIN,BLDC_BL_PIN,  BLDC_GH_PIN,BLDC_GL_PIN,  BLDC_YH_PIN,BLDC_YL_PIN );
 
-#ifdef DEBUG_STLINK
-  #include <RTTStream.h>
-  RTTStream rtt;
-#endif
+// shunt resistor value , gain value,  pins phase A,B,C
+LowsideCurrentSense current_sense = LowsideCurrentSense(BLDC_CUR_Rds, BLDC_CUR_Gain, BLDC_CUR_G_PIN, BLDC_CUR_B_PIN, BLDC_CUR_Y_PIN);
 
 
-class CIO
+class CIO   // little helper class to demonstrate object oriented programming
 {	
 private:
 	int m_iPin;
@@ -56,11 +43,11 @@ public:
 	void Set(bool bOn = true);
 	bool Get(void);
 };
-
 CIO::CIO(int iPin, int iType=INPUT){	m_iPin = iPin;  m_iType = iType;}
 void CIO::Init(){  pinMode(m_iPin, m_iType);  }	
 void CIO::Set(bool bOn){ digitalWrite(m_iPin,bOn); }	
 bool CIO::Get(void){  return digitalRead(m_iPin); }
+
 
 CIO oKeepOn = CIO(SELF_HOLD_PIN,OUTPUT);
 CIO oOnOff = CIO(BUTTON_PIN);
@@ -70,46 +57,47 @@ CIO oLedOrange  = CIO(LED_ORANGE,OUTPUT);
 CIO oLedRed     = CIO(LED_RED,OUTPUT);
 
 CIO aoLed[5] = {oLedGreen, oLedOrange, oLedRed, CIO(UPPER_LED_PIN,OUTPUT), CIO(LOWER_LED_PIN,OUTPUT) };
-#define LED_Count 5
+#define LED_Count 5   // reduce to test led pins..
 
 CIO aoHall[3] = {CIO(HALL_A_PIN), CIO(HALL_B_PIN), CIO(HALL_C_PIN) };
 #define HALL_Count 3
 
-CIO aoBLDC[6] = {CIO(BLDC_BH_PIN),CIO(BLDC_BL_PIN),CIO(BLDC_GH_PIN),CIO(BLDC_GL_PIN),CIO(BLDC_YH_PIN),CIO(BLDC_YL_PIN)};
+CIO aoBLDC[6] = { CIO(BLDC_BH_PIN), CIO(BLDC_BL_PIN), CIO(BLDC_GH_PIN), CIO(BLDC_GL_PIN), CIO(BLDC_YH_PIN), CIO(BLDC_YL_PIN) };
 
-void LedError(int iError)
+void Blink(int iBlinks, CIO& oLed = oLedRed)
 {
-  for (int j=0; j<iError; j++)
+  for (int j=0; j<iBlinks; j++)
   {
     if (j)  delay(100);
-    oLedRed.Set(HIGH);
+    oLed.Set(HIGH);
     delay(100);
-    oLedRed.Set(LOW);
+    oLed.Set(LOW);
   }
-
 }
 
+
+unsigned long iLoopStart = 0;   // time setup() finishes and loop() starts
 
 // ########################## SETUP ##########################
 void setup()
 {
+  #ifdef DEBUG_UART
+    DEBUG_UART.begin(DEBUG_UART_BAUD);
+    SimpleFOCDebug::enable(&DEBUG_UART);
+    motor.useMonitoring(DEBUG_UART);
+  #endif
+  //Serial2.begin(DEBUG_UART_BAUD); // when using Serial1 as DEBUG_UART
+
+  #ifdef DEBUG_STLINK
+    SimpleFOCDebug::enable(&rtt);
+    motor.useMonitoring(rtt);
+  #endif
 
   oKeepOn.Init();
   oKeepOn.Set(true);  // now we can release the on button :-)
   oOnOff.Init();
 
-  #ifdef DEBUG_UART
-    DEBUG_UART.begin(DEBUG_UART_BAUD);
-    SimpleFOCDebug::enable(&DEBUG_UART);
-  #endif
-
-  #ifdef DEBUG_STLINK
-    SimpleFOCDebug::enable(&rtt);
-  #endif
-
-  //Serial2.begin(DEBUG_UART_BAUD); // when using Serial1 as DEBUG_UART
-
-  OUTLN("Split Hoverboards with C++ SimpleFOC :-)")
+  OUTN("Split Hoverboards with C++ SimpleFOC :-)")
 
   for (int i=0; i<LED_Count; i++) 
   {
@@ -119,72 +107,88 @@ void setup()
     aoLed[i].Set(LOW);
   }
 
-
   for (int i=0; i<HALL_Count; i++)  aoHall[i].Init();
 
-  // init5ialize sensor hardware
-  sensor.init();
-  // hardware interrupt enable
-  sensor.enableInterrupts(doA, doB, doC);
-  motor.linkSensor(&sensor);
+  
+  sensor.init();  // initialize sensor hardware
+  sensor.enableInterrupts(doA, doB, doC); // hardware interrupt enable
+   
+  motor.linkSensor(&sensor);  // link the motor to the sensor
 
-   // link the motor to the sensor
-  motor.linkSensor(&sensor);
-
-  // driver config
-  // power supply voltage [V]
-  driver.voltage_power_supply = 30;
-  driver.voltage_limit = 10;
-  if (!driver.init())
+  driver.voltage_power_supply = 3.6 * BAT_CELLS; // power supply voltage [V]
+  driver.voltage_limit = 0.3 * driver.voltage_power_supply;   // keep well below 1.0 for testing !
+  if (driver.init())
   {
-    LedError(10);
-    for(int i=0; i<6; i++)  aoBLDC[i].Init();  // set back to input to free the blocked motor
-  }else{
     driver.enable();
+    Blink(2,oLedOrange);
+  }
+  else
+  {
+    Blink(10);
+    for(int i=0; i<6; i++)  aoBLDC[i].Init();  // set back to input to free the blocked motor
+    return; // cancel simpleFOC setup
   }
 
-  // link driver
-  motor.linkDriver(&driver);
-
-  // aligning voltage
-  motor.voltage_sensor_align = 1;
+  motor.linkDriver(&driver);  // link driver
+  motor.voltage_sensor_align  = 1;                            // aligning voltage
+  motor.foc_modulation        = FOCModulationType::SinePWM;   // choose FOC modulation (optional)
+  motor.controller            = MotionControlType::torque;    // set motion control loop to be used
+  motor.torque_controller     = TorqueControlType::voltage;
   
-  // choose FOC modulation (optional)
-  motor.foc_modulation = FOCModulationType::SinePWM;
-
-  // set motion control loop to be used
-  motor.controller = MotionControlType::torque;
-  motor.torque_controller = TorqueControlType::voltage;
-  
-  #ifdef DEBUG_UART
-    motor.useMonitoring(DEBUG_UART);
-  #endif
-
-  #ifdef DEBUG_STLINK
-    motor.useMonitoring(rtt);
-  #endif
+/*  
+  // succeeds but motor.initFOC(2.09,Direction::CCW)  hangs 
+  // motor.initFOC() will turn motor forward and backward a bit and then also hangs
+  // We probably need a SimpleFOC/src/current_sense/hardware_specific/gd32/gd32_mcu.cpp
+  if (current_sense.init())
+  {
+    motor.linkCurrentSense(&current_sense);
+    Blink(3,oLedOrange);
+  }
+  else
+  {
+    Blink(5);
+    OUTN("current_sense.init() failed.")
+    return;   // cancel simpleFOC setup
+  }
+*/
 
   // initialize motor
   motor.init();
   motor.initFOC(2.09,Direction::CCW); // Start FOC without alignment
   //motor.initFOC();// align sensor and start FOC
+
+  Blink(3,oLedGreen);
+
+  iLoopStart = millis();    // this will at least take 1 ms;
+  OUT2N("setup needed ms",iLoopStart)
 }
 
 unsigned long iTimeSend = 0;
+long iMicrosLast = 0;
+long iMicrosMax = 0;
 void loop()
 {
-  // main FOC algorithm function
-  // the faster you run this function the better
-  // Arduino UNO loop  ~1kHz
-  // Bluepill loop ~10kHz 
-  motor.loopFOC();
+  long iMicrosNow = _micros();
+  long iMicros = iMicrosNow - iMicrosLast;
+  if (iMicrosMax < iMicros) iMicrosMax = iMicros;
+  iMicrosLast = iMicrosNow;
 
-  // Motion control function
-  // velocity, position or voltage (defined in motor.controller)
-  // this function can be run at much lower frequency than loopFOC() function
-  // You can also use motor.move() and set the motor.target in the code
-  float fSpeed = 5.0 * (ABS(	(float)((millis()/50+100) % 400) - 200) - 100)/100;
-  motor.move(fSpeed);
+  if (motor.enabled)  // set by successful motor.init() at the end of setup()
+  {
+    // main FOC algorithm function
+    // the faster you run this function the better
+    // Arduino UNO loop  ~1kHz
+    // Bluepill loop ~10kHz 
+    motor.loopFOC();
+
+    // Motion control function
+    // velocity, position or voltage (defined in motor.controller)
+    // this function can be run at much lower frequency than loopFOC() function
+    // You can also use motor.move() and set the motor.target in the code
+    float fSpeed = (0.1*driver.voltage_power_supply)  * (ABS(	(float)(((millis()-iLoopStart)/50 + 100) % 400) - 200) - 100)/100;
+    //fSpeed = 5.0;
+    motor.move(fSpeed);
+  }
 
   unsigned long iNow = millis();
 
@@ -210,12 +214,26 @@ void loop()
   if (oOnOff.Get()) oKeepOn.Set(false);
 
   DEBUG( 
-    OUT2T("GD32",iNow) 
-    for (int i=0; i<HALL_Count; i++)  OUT2T(i,aoHall[i].Get())
+    //OUT2T("SystemCoreClock",SystemCoreClock ) 
+    OUT2T( iMicros , iMicrosMax )
+    //OUT2T( 1000.0f/iMicros , 1000.0f/(float)iMicrosMax )
+
+    //for (int i=0; i<HALL_Count; i++)  OUT2T(i,aoHall[i].Get())
     OUT2T("angle",sensor.getAngle()) 
     OUT2T("speed",sensor.getVelocity())
-    OUTLN()
+
+    if (current_sense.initialized)
+    {
+      PhaseCurrent_s currents = current_sense.getPhaseCurrents();
+      float current_magnitude = current_sense.getDCCurrent();
+      OUT2T("mA",current_magnitude*1000)  // milli Amps
+      OUT2T("B mA",currents.b*1000)  // milli Amps
+      OUT2T("C mA",currents.c*1000)  // milli Amps
+    }
+    OUTN()
   )
+  iMicrosMax = 0;
 
   //Serial2.println("test of the master/slave uart rx/tx PA3/PA2"); // when using Serial1 as DEBUG_UART
+
 }
