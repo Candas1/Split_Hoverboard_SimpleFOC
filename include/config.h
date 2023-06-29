@@ -10,11 +10,14 @@
 //#define LAYOUT_2_5	// NOT READY !!! https://github.com/RoboDurden/Hoverboard-Firmware-Hack-Gen2.x/issues/11
 //#define LAYOUT_2_NONE	// for testing the binary upload with no harmful pin definitions
 
+#define BLDC_POLE_PAIRS   15    // all hoverboard motors have 15 pole pairs ?
+#define BAT_CELLS         10     // battery number of cells. mostly 10 = 10s = 36V. Sometimes 7 = 7s = 25V
+
 // SEGGER RTT Debug
-//#define DEBUG_STLINK rtt              // Uncomment to enable DEBUG over stlink dongle
+#define DEBUG_STLINK rtt              // Uncomment to enable DEBUG over stlink dongle
 
 // log debug output over master/slave uart
-#define DEBUG_UART  Serial2
+//#define DEBUG_UART  Serial2
 #ifdef DEBUG_UART
   #define DEBUG_UART_BAUD   115200    // [-] Baud rate for HoverSerial (used to communicate with the hoverboard)
 #endif
