@@ -117,7 +117,7 @@ void setup()
   motor.linkSensor(&sensor);  // link the motor to the sensor
 
   driver.voltage_power_supply = 3.6 * BAT_CELLS; // power supply voltage [V]
-  driver.voltage_limit = 0.3 * driver.voltage_power_supply;   // 0.3 = keep well below 1.0 for testing !
+  driver.voltage_limit = 1.0 * driver.voltage_power_supply;   // 0.3 = keep well below 1.0 for testing !
   motor.voltage_limit = driver.voltage_limit; // stupid bug to have two voltage_limit in different places
   if (driver.init())
   {
@@ -174,7 +174,6 @@ float fSpeedMax = 0;
 float fSpeedMin = 0;
 float fSpeedAvgMax = 13;
 float fSpeedAvgMin = -13;
-float fSpeedMaxLast = 100;
 
 unsigned int iFOC = 0;
 
@@ -205,8 +204,8 @@ void loop()
     // this function can be run at much lower frequency than loopFOC() function
     // You can also use motor.move() and set the motor.target in the code
     //float fSpeed = (1.1*driver.voltage_power_supply)  * (ABS(	(float)(((millis()-iLoopStart)/50 + 100) % 400) - 200) - 100)/100;
-    fSpeed = (1.1*driver.voltage_power_supply)  * (ABS(	(float)(((millis()-iLoopStart)/5 + 250) % 1000) - 500) - 250)/250;
-    //fSpeed = 5.0;
+    fSpeed = (1.5*driver.voltage_power_supply)  * (ABS(	(float)(((millis()-iLoopStart)/10 + 250) % 1000) - 500) - 250)/250;
+    //fSpeed = 3.0;
     motor.move(fSpeed);
   }
 
@@ -277,21 +276,13 @@ void loop()
     OUTN(iFOC)
   )
 
-  fOptimize = -0.2  * (ABS(	(float)((iOptimize++ + 20) % 80) - 40) - 20)/20;
-  motor.zero_electric_angle = 2.09 + fOptimize;
+  //fOptimize = -0.2  * (ABS(	(float)((iOptimize++ + 20) % 80) - 40) - 20)/20;
+  //motor.zero_electric_angle = 2.09 + fOptimize;
   //sensor.fLinAdd = 0.5 - 0.5  * (ABS(	(float)((iOptimize++ + 20) % 80) - 40) - 20)/20;
-/*
-  if (fSpeedMaxLast < fSpeedMax)
-    fZero_Step *= -1;
-  motor.zero_electric_angle += fZero_Step;
-  */
-  fSpeedMaxLast = fSpeedMax;
 
 
-  iMicrosMax = 0;
-  fSpeedMax = 0;
-  fSpeedMin = 0;
-  iFOC = 0;
+  iMicrosMax = fSpeedMax = fSpeedMin = iFOC = 0;
+  
   //Serial2.println("test of the master/slave uart rx/tx PA3/PA2"); // when using Serial1 as DEBUG_UART
 
 }

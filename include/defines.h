@@ -2,27 +2,44 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
-#ifdef LAYOUT_2_0
-	#include "defines_2-0.h"		// https://github.com/flo199213/Hoverboard-Firmware-Hack-Gen2
-	// hall input pins A,B,C = B11,F1,C14 , etc.
+
+#if HOVER_GEN == 1
+	#ifdef HOVER_LAYOUT
+		#if HOVER_LAYOUT == 0	
+			#include "defines_1-0.h"
+		#endif
+	#else
+		#include "defines_1-x.h"		// for testing the binary upload with no harmful pin definitions
+	#endif
 #endif
-#ifdef LAYOUT_2_1
-	#include "defines_2-1.h"		// https://github.com/krisstakos/Hoverboard-Firmware-Hack-Gen2.1
+
+#if HOVER_GEN == 2
+	#ifdef HOVER_LAYOUT
+		#if HOVER_LAYOUT == 0
+			#include "defines_2-0.h"		// https://github.com/flo199213/Hoverboard-Firmware-Hack-Gen2
+		#endif
+		#if HOVER_LAYOUT == 1
+			#include "defines_2-1.h"		// https://github.com/krisstakos/Hoverboard-Firmware-Hack-Gen2.1
+		#endif
+		#if HOVER_LAYOUT == 2
+			#include "defines_2-2.h"		// https://github.com/krisstakos/Hoverboard-Firmware-Hack-Gen2.1
+		#endif
+		#if HOVER_LAYOUT == 3
+			#include "defines_2-3.h"		// https://github.com/flo199213/Hoverboard-Firmware-Hack-Gen2
+		#endif
+		#if HOVER_LAYOUT == 4
+			#include "defines_2-4.h"		// https://github.com/RoboDurden/Hoverboard-Firmware-Hack-Gen2.x/issues/3
+		#endif
+		#if HOVER_LAYOUT == 5
+			#include "defines_2-5.h"		// https://github.com/RoboDurden/Hoverboard-Firmware-Hack-Gen2.x/issues/11
+		#endif
+	#else
+		#include "defines_2-x.h"		// for testing the binary upload with no harmful pin definitions
+	#endif
 #endif
-#ifdef LAYOUT_2_2
-	#include "defines_2-2.h"		// https://github.com/krisstakos/Hoverboard-Firmware-Hack-Gen2.1
-#endif
-#ifdef LAYOUT_2_4
-	#include "defines_2-4.h"		// https://github.com/RoboDurden/Hoverboard-Firmware-Hack-Gen2.x/issues/3
-#endif
-#ifdef LAYOUT_2_5
-	#include "defines_2-5.h"		// https://github.com/RoboDurden/Hoverboard-Firmware-Hack-Gen2.x/issues/11
-#endif
-#ifdef LAYOUT_2_NONE	// for testing the binary upload with no harmful pin definitions
-	#include "defines_2-x.h"
-#endif
-#ifdef LAYOUT_Gen1	// for testing the binary upload with no harmful pin definitions
-	#include "defines_1-0.h"
+
+#ifndef LED_RED
+  #error no propper HOVER_GEN and HOVER_LAYOUT set in config.h
 #endif
 
 
