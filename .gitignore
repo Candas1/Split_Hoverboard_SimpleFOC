@@ -3,4 +3,9 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
-!.pio/libdeps/GD32F130C8/Simple FOC/src/*
+# Ignore everything
+*
+# But descend into directories
+!*/
+# Recursively allow files under subtree
+!/.pio/libdeps/GD32F130C8/Simple FOC/src/**
