@@ -25,7 +25,8 @@ void doB()  { sensor.handleB(); }
 void doC()  { sensor.handleC(); }
 
 // BLDC motor & driver instance
-BLDCMotor motor = BLDCMotor(BLDC_POLE_PAIRS);
+BLDCMotor motor = BLDCMotor(BLDC_POLE_PAIRS); // int pp,  float R = NOT_SET [Ohm], float KV = NOT_SET [rpm/V], float L = NOT_SET [H]
+//BLDCMotor motor = BLDCMotor(BLDC_POLE_PAIRS, 0.1664, 16.0, 0.00036858);  
 BLDCDriver6PWM driver = BLDCDriver6PWM( BLDC_BH_PIN,BLDC_BL_PIN,  BLDC_GH_PIN,BLDC_GL_PIN,  BLDC_YH_PIN,BLDC_YL_PIN );
 
 // shunt resistor value , gain value,  pins phase A,B,C
@@ -116,7 +117,8 @@ void setup()
   motor.linkSensor(&sensor);  // link the motor to the sensor
 
   driver.voltage_power_supply = 3.6 * BAT_CELLS; // power supply voltage [V]
-  driver.voltage_limit = 0.3 * driver.voltage_power_supply;   // keep well below 1.0 for testing !
+  driver.voltage_limit = 0.3 * driver.voltage_power_supply;   // 0.3 = keep well below 1.0 for testing !
+  motor.voltage_limit = driver.voltage_limit; // stupid bug to have two voltage_limit in different places
   if (driver.init())
   {
     driver.enable();
@@ -132,6 +134,7 @@ void setup()
   motor.linkDriver(&driver);  // link driver
   motor.voltage_sensor_align  = 1;                            // aligning voltage
   motor.foc_modulation        = FOCModulationType::SinePWM;   // choose FOC modulation (optional)
+  //motor.foc_modulation        = FOCModulationType::SpaceVectorPWM;
   motor.controller            = MotionControlType::torque;    // set motion control loop to be used
   motor.torque_controller     = TorqueControlType::voltage;
   
@@ -155,6 +158,7 @@ void setup()
   // initialize motor
   motor.init();
   motor.initFOC(2.09,Direction::CCW); // Start FOC without alignment
+  //motor.initFOC(NOT_SET,Direction::CW);
   //motor.initFOC();// align sensor and start FOC
 
   Blink(3,oLedGreen);
@@ -166,6 +170,20 @@ void setup()
 unsigned long iTimeSend = 0;
 long iMicrosLast = 0;
 long iMicrosMax = 0;
+float fSpeedMax = 0;
+float fSpeedMin = 0;
+float fSpeedAvgMax = 13;
+float fSpeedAvgMin = -13;
+float fSpeedMaxLast = 100;
+
+unsigned int iFOC = 0;
+
+unsigned long iOptimize = 0;
+float fOptimize = 0;
+/*
+float fZero_Step = 0.005;
+int iZero_Direction = 1;
+*/
 void loop()
 {
   long iMicrosNow = _micros();
@@ -173,6 +191,7 @@ void loop()
   if (iMicrosMax < iMicros) iMicrosMax = iMicros;
   iMicrosLast = iMicrosNow;
 
+  float fSpeed;
   if (motor.enabled)  // set by successful motor.init() at the end of setup()
   {
     // main FOC algorithm function
@@ -185,10 +204,20 @@ void loop()
     // velocity, position or voltage (defined in motor.controller)
     // this function can be run at much lower frequency than loopFOC() function
     // You can also use motor.move() and set the motor.target in the code
-    float fSpeed = (0.1*driver.voltage_power_supply)  * (ABS(	(float)(((millis()-iLoopStart)/50 + 100) % 400) - 200) - 100)/100;
+    //float fSpeed = (1.1*driver.voltage_power_supply)  * (ABS(	(float)(((millis()-iLoopStart)/50 + 100) % 400) - 200) - 100)/100;
+    fSpeed = (1.1*driver.voltage_power_supply)  * (ABS(	(float)(((millis()-iLoopStart)/5 + 250) % 1000) - 500) - 250)/250;
     //fSpeed = 5.0;
     motor.move(fSpeed);
   }
+
+  iFOC++;
+  float fVelocity = sensor.getVelocity();
+  if (fSpeedMax < fVelocity) fSpeedMax = fVelocity;
+  if (fSpeedMin > fVelocity) fSpeedMin = fVelocity;
+  if (-fSpeed > driver.voltage_limit)  // will be clamped and therefore be constant
+    fSpeedAvgMax = 0.99 * fSpeedAvgMax + 0.01 * fVelocity;
+  else if (fSpeed > driver.voltage_limit)  // will be clamped and therefore be constant
+    fSpeedAvgMin = 0.99 * fSpeedAvgMin + 0.01 * fVelocity;
 
   unsigned long iNow = millis();
 
@@ -213,15 +242,30 @@ void loop()
 
   if (oOnOff.Get()) oKeepOn.Set(false);
 
+
+
   DEBUG( 
     //OUT2T("SystemCoreClock",SystemCoreClock ) 
+    OUT2T(fSpeedMin , fSpeedMax)
+    OUT2T(fSpeedAvgMin , fSpeedAvgMax)
+    OUT2T(abs(fSpeedMin+fSpeedMax), abs(fSpeedAvgMin+fSpeedAvgMax))
+    //OUT2T("fLinAdd%",sensor.fLinAdd*100)
+    OUT2T(fOptimize*1000, motor.zero_electric_angle*1000)
     OUT2T( iMicros , iMicrosMax )
     //OUT2T( 1000.0f/iMicros , 1000.0f/(float)iMicrosMax )
 
+/*
     //for (int i=0; i<HALL_Count; i++)  OUT2T(i,aoHall[i].Get())
     OUT2T("angle",sensor.getAngle()) 
     OUT2T("speed",sensor.getVelocity())
 
+    OUT2T(sensor.fAngleOrgLast , sensor.fAngleOrg)
+    OUT2T(sensor.fAngleLinLast , sensor.fAngleLin)
+    //OUT2T("fAngleNew" , sensor.fAngleLagrange)
+    OUT2T(sensor.aiAngle[0] , sensor.aiTime[0]-sensor.aiTime[1])
+    OUT2T(sensor.iTimeSinceOld , sensor.iTimeSince) // sensor.fGradient1*1000
+    //OUT2T(sensor.fGradient1Last*1000,sensor.fGradient1*1000)
+*/
     if (current_sense.initialized)
     {
       PhaseCurrent_s currents = current_sense.getPhaseCurrents();
@@ -230,10 +274,24 @@ void loop()
       OUT2T("B mA",currents.b*1000)  // milli Amps
       OUT2T("C mA",currents.c*1000)  // milli Amps
     }
-    OUTN()
+    OUTN(iFOC)
   )
-  iMicrosMax = 0;
 
+  fOptimize = -0.2  * (ABS(	(float)((iOptimize++ + 20) % 80) - 40) - 20)/20;
+  motor.zero_electric_angle = 2.09 + fOptimize;
+  //sensor.fLinAdd = 0.5 - 0.5  * (ABS(	(float)((iOptimize++ + 20) % 80) - 40) - 20)/20;
+/*
+  if (fSpeedMaxLast < fSpeedMax)
+    fZero_Step *= -1;
+  motor.zero_electric_angle += fZero_Step;
+  */
+  fSpeedMaxLast = fSpeedMax;
+
+
+  iMicrosMax = 0;
+  fSpeedMax = 0;
+  fSpeedMin = 0;
+  iFOC = 0;
   //Serial2.println("test of the master/slave uart rx/tx PA3/PA2"); // when using Serial1 as DEBUG_UART
 
 }

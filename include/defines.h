@@ -21,6 +21,9 @@
 #ifdef LAYOUT_2_NONE	// for testing the binary upload with no harmful pin definitions
 	#include "defines_2-x.h"
 #endif
+#ifdef LAYOUT_Gen1	// for testing the binary upload with no harmful pin definitions
+	#include "defines_1-0.h"
+#endif
 
 
 #define NO 0
