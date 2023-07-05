@@ -4,8 +4,8 @@
 .vscode/launch.json
 .vscode/ipch
 # Ignore everything
-*
+#*
 # But descend into directories
-!*/
+#!*/
 # Recursively allow files under subtree
-!/.pio/libdeps/GD32F130C8/Simple FOC/src/**
+#!/.pio/libdeps/GD32F130C8/Simple FOC/src/**
