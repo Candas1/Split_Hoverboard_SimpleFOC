@@ -3,3 +3,4 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+!.pio/libdeps/GD32F130C8/Simple FOC/src/*
