@@ -28,6 +28,13 @@
 #define BLDC_YH_PIN TODO_PIN
 #define BLDC_YL_PIN TODO_PIN
 
+// BLDC low-side current sense pins (R_ds)
+#define BLDC_CUR_Rds 0.008	// R_ds of the low side n-Chnannel mosfets
+#define BLDC_CUR_Gain 50.0	// gain of the op-amp to amplify voltage_drain-source
+#define BLDC_CUR_G_PIN _NC	// simpleFOC can handle 2 or 3 current sense pins
+#define BLDC_CUR_B_PIN TODO_PIN
+#define BLDC_CUR_Y_PIN TODO_PIN
+
 
 // Self hold defines
 // Set output high to keep the latch ON. Set low to turn the board OFF

@@ -2,7 +2,7 @@ Import("env")
 env.AddCustomTarget(
     "RTT Start",
     None,
-    "$PROJECT_PACKAGES_DIR/tool-openocd/bin/openocd" + 
+    "\"$PROJECT_PACKAGES_DIR/tool-openocd/bin/openocd\"" + 
     " -f interface/stlink.cfg" +
     " -c \"transport select hla_swd\"" + 
     " -f target/stm32f1x.cfg" +

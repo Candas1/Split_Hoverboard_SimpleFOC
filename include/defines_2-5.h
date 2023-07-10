@@ -26,6 +26,13 @@
 #define BLDC_YH_PIN PA8
 #define BLDC_YL_PIN PB13
 
+// BLDC low-side current sense pins (R_ds)
+#define BLDC_CUR_Rds 0.008	// R_ds of the low side n-Chnannel mosfets
+#define BLDC_CUR_Gain 50.0	// gain of the op-amp to amplify voltage_drain-source
+#define BLDC_CUR_G_PIN PB7	// simpleFOC can handle 2 or 3 current sense pins
+#define BLDC_CUR_B_PIN PB1
+#define BLDC_CUR_Y_PIN PB0
+
 
 // Self hold defines
 // Set output high to keep the latch ON. Set low to turn the board OFF
