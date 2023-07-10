@@ -117,8 +117,7 @@ void setup()
   motor.linkSensor(&sensor);  // link the motor to the sensor
 
   driver.voltage_power_supply = 3.6 * BAT_CELLS; // power supply voltage [V]
-  driver.voltage_limit = 1.0 * driver.voltage_power_supply;   // 0.3 = keep well below 1.0 for testing !
-  motor.voltage_limit = driver.voltage_limit; // stupid bug to have two voltage_limit in different places
+  motor.voltage_limit = driver.voltage_power_supply/2; // should be half the power supply
   if (driver.init())
   {
     driver.enable();
@@ -133,7 +132,8 @@ void setup()
 
   motor.linkDriver(&driver);  // link driver
   motor.voltage_sensor_align  = 1;                            // aligning voltage
-  motor.foc_modulation        = FOCModulationType::SinePWM;   // choose FOC modulation (optional)
+  motor.foc_modulation        = FOCModulationType::Trapezoid_120;
+  //motor.foc_modulation        = FOCModulationType::SinePWM;   // choose FOC modulation (optional)
   //motor.foc_modulation        = FOCModulationType::SpaceVectorPWM;
   motor.controller            = MotionControlType::torque;    // set motion control loop to be used
   motor.torque_controller     = TorqueControlType::voltage;
@@ -203,8 +203,8 @@ void loop()
     // velocity, position or voltage (defined in motor.controller)
     // this function can be run at much lower frequency than loopFOC() function
     // You can also use motor.move() and set the motor.target in the code
-    //float fSpeed = (1.1*driver.voltage_power_supply)  * (ABS(	(float)(((millis()-iLoopStart)/50 + 100) % 400) - 200) - 100)/100;
-    fSpeed = (1.5*driver.voltage_power_supply)  * (ABS(	(float)(((millis()-iLoopStart)/10 + 250) % 1000) - 500) - 250)/250;
+    //float fSpeed = (motor.voltage_limit)  * (ABS(	(float)(((millis()-iLoopStart)/50 + 100) % 400) - 200) - 100)/100;
+    fSpeed = (motor.voltage_limit) * (ABS((float)(((millis()-iLoopStart)/10 + 250) % 1000) - 500) - 250)/250;
     //fSpeed = 3.0;
     motor.move(fSpeed);
   }
