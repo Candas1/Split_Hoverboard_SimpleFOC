@@ -33,6 +33,9 @@
 		#if HOVER_LAYOUT == 5
 			#include "defines_2-5.h"		// https://github.com/RoboDurden/Hoverboard-Firmware-Hack-Gen2.x/issues/11
 		#endif
+		#if HOVER_LAYOUT == 6
+			#include "defines_2-6.h"		// https://github.com/JohMah/Hoverboard-JC2015.7.31.V2.0-Hack
+		#endif
 	#else
 		#include "defines_2-x.h"		// for testing the binary upload with no harmful pin definitions
 	#endif
