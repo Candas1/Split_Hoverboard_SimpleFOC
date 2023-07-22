@@ -108,6 +108,10 @@ void setup()
     aoLed[i].Set(LOW);
   }
 
+  // For time measurement with the oscilloscope
+  pinMode(PB6,OUTPUT);
+  pinMode(PB7,OUTPUT);
+
   for (int i=0; i<HALL_Count; i++)  aoHall[i].Init();
 
   
@@ -169,8 +173,10 @@ void loop()
     // main FOC algorithm function
     // the faster you run this function the better
     // Arduino UNO loop  ~1kHz
-    // Bluepill loop ~10kHz 
+    // Bluepill loop ~10kHz
+    GPIO_BOP(GPIOB) = (uint32_t)GPIO_PIN_6; 
     motor.loopFOC();
+    GPIO_BC(GPIOB) = (uint32_t)GPIO_PIN_6;
 
     // Motion control function
     // velocity, position or voltage (defined in motor.controller)
@@ -178,9 +184,12 @@ void loop()
     // You can also use motor.move() and set the motor.target in the code
     //float fSpeed = (motor.voltage_limit)  * (ABS(	(float)(((millis()-iLoopStart)/50 + 100) % 400) - 200) - 100)/100;
     fSpeed = (motor.voltage_limit/4) * (ABS((float)(((millis()-iLoopStart)/10 + 250) % 1000) - 500) - 250)/250;
+    GPIO_BOP(GPIOB) = (uint32_t)GPIO_PIN_7;
     motor.move(fSpeed);
+    GPIO_BC(GPIOB) = (uint32_t)GPIO_PIN_7;
   }
   
+  /*
   unsigned long iNow = millis();
   unsigned int iTime = (iNow/1000)%12;
   if (iTime < 5)
@@ -195,6 +204,7 @@ void loop()
 
   if (iTimeSend > iNow) return;
   iTimeSend = iNow + TIME_SEND;
+  */
 
   if (oOnOff.Get()) oKeepOn.Set(false);
 
