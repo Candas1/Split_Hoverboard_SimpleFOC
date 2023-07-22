@@ -2,6 +2,8 @@
 #include <Config.h>
 #include <Defines.h>
 #include <SimpleFOC.h>
+#include <SimpleFOCDrivers.h>
+#include <encoders/smoothing/SmoothingSensor.h>
 
 #ifdef DEBUG_STLINK
   #include <RTTStream.h>
@@ -28,6 +30,9 @@ void doC()  { sensor.handleC(); }
 BLDCMotor motor = BLDCMotor(BLDC_POLE_PAIRS); // int pp,  float R = NOT_SET [Ohm], float KV = NOT_SET [rpm/V], float L = NOT_SET [H]
 //BLDCMotor motor = BLDCMotor(BLDC_POLE_PAIRS, 0.1664, 16.0, 0.00036858);  
 BLDCDriver6PWM driver = BLDCDriver6PWM( BLDC_BH_PIN,BLDC_BL_PIN,  BLDC_GH_PIN,BLDC_GL_PIN,  BLDC_YH_PIN,BLDC_YL_PIN );
+
+// instantiate the smoothing sensor, providing the real sensor as a constructor argument
+SmoothingSensor smooth = SmoothingSensor(sensor, motor);
 
 // shunt resistor value , gain value,  pins phase A,B,C
 LowsideCurrentSense current_sense = LowsideCurrentSense(BLDC_CUR_Rds, BLDC_CUR_Gain, BLDC_CUR_G_PIN, BLDC_CUR_B_PIN, BLDC_CUR_Y_PIN);
@@ -113,8 +118,12 @@ void setup()
   
   sensor.init();  // initialize sensor hardware
   sensor.enableInterrupts(doA, doB, doC); // hardware interrupt enable
-   
+  
+  // set SmoothingSensor phase correction for hall sensors
+  smooth.phase_correction = -_PI_6;
+
   motor.linkSensor(&sensor);  // link the motor to the sensor
+  //motor.linkSensor(&smooth); // link the motor to the smoothing sensor
 
   driver.voltage_power_supply = 3.6 * BAT_CELLS; // power supply voltage [V]
   motor.voltage_limit = driver.voltage_power_supply/2; // should be half the power supply
@@ -132,8 +141,8 @@ void setup()
 
   motor.linkDriver(&driver);  // link driver
   motor.voltage_sensor_align  = 1;                            // aligning voltage
-  motor.foc_modulation        = FOCModulationType::Trapezoid_120;
-  //motor.foc_modulation        = FOCModulationType::SinePWM;   // Only with Sensor Smoothing
+  //motor.foc_modulation        = FOCModulationType::Trapezoid_120;
+  motor.foc_modulation        = FOCModulationType::SinePWM;   // Only with Sensor Smoothing
   //motor.foc_modulation        = FOCModulationType::SpaceVectorPWM; // Only with Current Sense
   motor.controller            = MotionControlType::torque;    // set motion control loop to be used
   motor.torque_controller     = TorqueControlType::voltage;
@@ -153,35 +162,49 @@ void setup()
 */
 
   // initialize motor
+  motor.sensor_direction=Direction::CCW; // or Direction::CCW
+  motor.zero_electric_angle=2.09;     // use the real value!
   motor.init();
-  motor.initFOC(2.09,Direction::CCW); // Start FOC without alignment
+  motor.initFOC(); // Start FOC without alignment
 
   Blink(3,oLedGreen);
 }
 
 unsigned long iTimeSend = 0;
+float vel, predangle, realangle;
+float fSpeed;
 
 void loop()
 {
-  float fSpeed;
+  
   if (motor.enabled)  // set by successful motor.init() at the end of setup()
   {
     // main FOC algorithm function
     // the faster you run this function the better
     // Arduino UNO loop  ~1kHz
     // Bluepill loop ~10kHz 
+    oLedGreen.Set(true);
     motor.loopFOC();
+    oLedGreen.Set(false);
 
     // Motion control function
     // velocity, position or voltage (defined in motor.controller)
     // this function can be run at much lower frequency than loopFOC() function
     // You can also use motor.move() and set the motor.target in the code
     //float fSpeed = (motor.voltage_limit)  * (ABS(	(float)(((millis()-iLoopStart)/50 + 100) % 400) - 200) - 100)/100;
-    fSpeed = (motor.voltage_limit/4) * (ABS((float)(((millis()-iLoopStart)/10 + 250) % 1000) - 500) - 250)/250;
+    fSpeed = (motor.voltage_limit/6) * (ABS((float)(((millis()-iLoopStart)/200 + 250) % 1000) - 500) - 250)/250;
+    
+    oLedOrange.Set(true);
     motor.move(fSpeed);
+    oLedOrange.Set(false);
+
+    vel = motor.shaft_velocity;
+    predangle = smooth.getAngle();
+    realangle = sensor.getAngle();
+    
   }
   
-  unsigned long iNow = millis();
+  /*unsigned long iNow = millis();
   unsigned int iTime = (iNow/1000)%12;
   if (iTime < 5)
     for (int i=0; i<HALL_Count; i++)  aoLed[i].Set( aoHall[i].Get() );
@@ -195,6 +218,7 @@ void loop()
 
   if (iTimeSend > iNow) return;
   iTimeSend = iNow + TIME_SEND;
+  */
 
   if (oOnOff.Get()) oKeepOn.Set(false);
 
