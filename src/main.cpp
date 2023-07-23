@@ -113,6 +113,10 @@ void setup()
     aoLed[i].Set(LOW);
   }
 
+  // For time measurement with the oscilloscope
+  pinMode(PB6,OUTPUT);
+  pinMode(PB7,OUTPUT);
+
   for (int i=0; i<HALL_Count; i++)  aoHall[i].Init();
 
   
@@ -146,7 +150,7 @@ void setup()
   //motor.foc_modulation        = FOCModulationType::SpaceVectorPWM; // Only with Current Sense
   motor.controller            = MotionControlType::torque;    // set motion control loop to be used
   motor.torque_controller     = TorqueControlType::voltage;
-  
+  //motor.motion_downsample = 100;
 /*  
   if (current_sense.init())
   {
@@ -183,25 +187,26 @@ void loop()
     // the faster you run this function the better
     // Arduino UNO loop  ~1kHz
     // Bluepill loop ~10kHz 
-    oLedGreen.Set(true);
+    GPIO_BOP(GPIOB) = (uint32_t)GPIO_PIN_6; 
     motor.loopFOC();
-    oLedGreen.Set(false);
+    GPIO_BC(GPIOB) = (uint32_t)GPIO_PIN_6;
 
     // Motion control function
     // velocity, position or voltage (defined in motor.controller)
     // this function can be run at much lower frequency than loopFOC() function
     // You can also use motor.move() and set the motor.target in the code
     //float fSpeed = (motor.voltage_limit)  * (ABS(	(float)(((millis()-iLoopStart)/50 + 100) % 400) - 200) - 100)/100;
-    fSpeed = (motor.voltage_limit/6) * (ABS((float)(((millis()-iLoopStart)/200 + 250) % 1000) - 500) - 250)/250;
+    fSpeed = (motor.voltage_limit/4) * (ABS((float)(((millis()-iLoopStart)/10 + 250) % 1000) - 500) - 250)/250;
     
-    oLedOrange.Set(true);
+    GPIO_BOP(GPIOB) = (uint32_t)GPIO_PIN_7;
     motor.move(fSpeed);
-    oLedOrange.Set(false);
+    GPIO_BC(GPIOB) = (uint32_t)GPIO_PIN_7;
 
+    /*
     vel = motor.shaft_velocity;
     predangle = smooth.getAngle();
     realangle = sensor.getAngle();
-    
+    */
   }
   
   /*unsigned long iNow = millis();
