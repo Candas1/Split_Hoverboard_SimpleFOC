@@ -27,8 +27,9 @@ void doB()  { sensor.handleB(); }
 void doC()  { sensor.handleC(); }
 
 // BLDC motor & driver instance
-BLDCMotor motor = BLDCMotor(BLDC_POLE_PAIRS); // int pp,  float R = NOT_SET [Ohm], float KV = NOT_SET [rpm/V], float L = NOT_SET [H]
-//BLDCMotor motor = BLDCMotor(BLDC_POLE_PAIRS, 0.1664, 16.0, 0.00036858);  
+//BLDCMotor motor = BLDCMotor(BLDC_POLE_PAIRS); // int pp,  float R = NOT_SET [Ohm], float KV = NOT_SET [rpm/V], float L = NOT_SET [H]
+//BLDCMotor motor = BLDCMotor(BLDC_POLE_PAIRS, 0.1664, 16.0, 0.00036858);
+BLDCMotor motor = BLDCMotor(BLDC_POLE_PAIRS, NOT_SET, NOT_SET, 0.00036858); 
 BLDCDriver6PWM driver = BLDCDriver6PWM( BLDC_BH_PIN,BLDC_BL_PIN,  BLDC_GH_PIN,BLDC_GL_PIN,  BLDC_YH_PIN,BLDC_YL_PIN );
 
 // instantiate the smoothing sensor, providing the real sensor as a constructor argument
@@ -84,6 +85,34 @@ void Blink(int iBlinks, CIO& oLed = oLedRed)
 
 unsigned long iLoopStart = 0;   // time setup() finishes and loop() starts
 
+Commander command = Commander(rtt);
+
+float target = 0;
+
+void doTarget(char* cmd) { command.scalar(&target, cmd); }
+void doPhaseCorrection(char* cmd) {
+  float phase_correction;
+  command.scalar(&phase_correction, cmd);
+  smooth.phase_correction = phase_correction;
+}
+
+void doZero(char* cmd) {
+  float zero_angle;
+  command.scalar(&zero_angle, cmd);
+  motor.zero_electric_angle = zero_angle;
+}
+void enableSmoothing(char* cmd) {
+  float enable;
+  command.scalar(&enable, cmd);
+  motor.linkSensor(enable == 0 ? (Sensor*)&sensor : (Sensor*)&smooth);
+}
+
+void doLPF(char* cmd) {
+  float LPF;
+  command.scalar(&LPF, cmd);
+  motor.LPF_velocity.Tf = LPF;
+}
+
 // ########################## SETUP ##########################
 void setup()
 {
@@ -124,13 +153,13 @@ void setup()
   sensor.enableInterrupts(doA, doB, doC); // hardware interrupt enable
   
   // set SmoothingSensor phase correction for hall sensors
-  smooth.phase_correction = -_PI_6;
+  smooth.phase_correction = _PI_6;
 
   motor.linkSensor(&sensor);  // link the motor to the sensor
   //motor.linkSensor(&smooth); // link the motor to the smoothing sensor
 
-  driver.voltage_power_supply = 3.6 * BAT_CELLS; // power supply voltage [V]
-  motor.voltage_limit = driver.voltage_power_supply/2; // should be half the power supply
+  driver.voltage_power_supply = 26; // 3.6 * BAT_CELLS; // power supply voltage [V]
+  motor.voltage_limit = driver.voltage_power_supply * 0.58; // should be half the power supply
   if (driver.init())
   {
     driver.enable();
@@ -144,13 +173,19 @@ void setup()
   }
 
   motor.linkDriver(&driver);  // link driver
-  motor.voltage_sensor_align  = 1;                            // aligning voltage
+  motor.voltage_sensor_align  = 2;                            // aligning voltage
   //motor.foc_modulation        = FOCModulationType::Trapezoid_120;
-  motor.foc_modulation        = FOCModulationType::SinePWM;   // Only with Sensor Smoothing
-  //motor.foc_modulation        = FOCModulationType::SpaceVectorPWM; // Only with Current Sense
+  //motor.foc_modulation        = FOCModulationType::SinePWM;   // Only with Sensor Smoothing
+  motor.foc_modulation        = FOCModulationType::SpaceVectorPWM; // Only with Current Sense
   motor.controller            = MotionControlType::torque;    // set motion control loop to be used
   motor.torque_controller     = TorqueControlType::voltage;
   //motor.motion_downsample = 100;
+
+  // velocity low pass filtering time constant
+  motor.PID_velocity.P  = 0.6f;
+  motor.PID_velocity.I  = 5.0f;
+  motor.LPF_velocity.Tf = 0.05f;
+
 /*  
   if (current_sense.init())
   {
@@ -167,9 +202,18 @@ void setup()
 
   // initialize motor
   motor.sensor_direction=Direction::CCW; // or Direction::CCW
-  motor.zero_electric_angle=2.09;     // use the real value!
+  motor.zero_electric_angle = 2.09;     // use the real value!
   motor.init();
   motor.initFOC(); // Start FOC without alignment
+  
+
+  // add target command T
+  command.add('T', doTarget, "target voltage");
+  // add smoothing enable/disable command E (send E0 to use hall sensor alone, or E1 to use smoothing)
+  command.add('E', enableSmoothing, "enable smoothing");
+  command.add('P', doPhaseCorrection, "phase correction");
+  command.add('Z', doZero, "zero electrical angle");
+  command.add('F', doLPF, "LPF");
 
   Blink(3,oLedGreen);
 }
@@ -186,7 +230,7 @@ void loop()
     // main FOC algorithm function
     // the faster you run this function the better
     // Arduino UNO loop  ~1kHz
-    // Bluepill loop ~10kHz 
+    // Bluepill loop ~10kHz
     GPIO_BOP(GPIOB) = (uint32_t)GPIO_PIN_6; 
     motor.loopFOC();
     GPIO_BC(GPIOB) = (uint32_t)GPIO_PIN_6;
@@ -195,35 +239,19 @@ void loop()
     // velocity, position or voltage (defined in motor.controller)
     // this function can be run at much lower frequency than loopFOC() function
     // You can also use motor.move() and set the motor.target in the code
-    //float fSpeed = (motor.voltage_limit)  * (ABS(	(float)(((millis()-iLoopStart)/50 + 100) % 400) - 200) - 100)/100;
-    fSpeed = (motor.voltage_limit/4) * (ABS((float)(((millis()-iLoopStart)/10 + 250) % 1000) - 500) - 250)/250;
+    //fSpeed = (motor.voltage_limit) * (ABS((float)(((millis()-iLoopStart)/10 + 250) % 1000) - 500) - 250)/250;
     
     GPIO_BOP(GPIOB) = (uint32_t)GPIO_PIN_7;
-    motor.move(fSpeed);
+    motor.move(target);
     GPIO_BC(GPIOB) = (uint32_t)GPIO_PIN_7;
 
-    /*
-    vel = motor.shaft_velocity;
-    predangle = smooth.getAngle();
-    realangle = sensor.getAngle();
-    */
-  }
-  
-  /*unsigned long iNow = millis();
-  unsigned int iTime = (iNow/1000)%12;
-  if (iTime < 5)
-    for (int i=0; i<HALL_Count; i++)  aoLed[i].Set( aoHall[i].Get() );
-  else if (iTime < 6 || iTime >= 11)
-    for (int i=0; i<LED_Count; i++)  aoLed[i].Set( (iNow%200) < 100 );
-  else if (iTime < 11)
-  {
-    int iPos = ((int)ABS(5*sensor.getAngle())) % HALL_Count;
-    for (int i=0; i<HALL_Count; i++)  aoLed[i].Set(i==iPos);
+    //vel = motor.shaft_velocity;
+    //predangle = smooth.getAngle();
+    //realangle = sensor.getAngle();
   }
 
-  if (iTimeSend > iNow) return;
-  iTimeSend = iNow + TIME_SEND;
-  */
+  // user communication
+  command.run();
 
   if (oOnOff.Get()) oKeepOn.Set(false);
 
