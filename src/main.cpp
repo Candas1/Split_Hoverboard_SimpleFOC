@@ -153,10 +153,8 @@ void setup()
   sensor.enableInterrupts(doA, doB, doC); // hardware interrupt enable
   
   // set SmoothingSensor phase correction for hall sensors
-  smooth.phase_correction = _PI_6;
-
-  motor.linkSensor(&sensor);  // link the motor to the sensor
-  //motor.linkSensor(&smooth); // link the motor to the smoothing sensor
+  smooth.phase_correction = -_PI_6;
+  motor.linkSensor(&smooth); // link the motor to the smoothing sensor
 
   driver.voltage_power_supply = 26; // 3.6 * BAT_CELLS; // power supply voltage [V]
   motor.voltage_limit = driver.voltage_power_supply * 0.58; // should be half the power supply
@@ -174,8 +172,6 @@ void setup()
 
   motor.linkDriver(&driver);  // link driver
   motor.voltage_sensor_align  = 2;                            // aligning voltage
-  //motor.foc_modulation        = FOCModulationType::Trapezoid_120;
-  //motor.foc_modulation        = FOCModulationType::SinePWM;   // Only with Sensor Smoothing
   motor.foc_modulation        = FOCModulationType::SpaceVectorPWM; // Only with Current Sense
   motor.controller            = MotionControlType::torque;    // set motion control loop to be used
   motor.torque_controller     = TorqueControlType::voltage;
@@ -201,7 +197,7 @@ void setup()
 */
 
   // initialize motor
-  motor.sensor_direction=Direction::CCW; // or Direction::CCW
+  motor.sensor_direction=Direction::CCW;
   motor.zero_electric_angle = 2.09;     // use the real value!
   motor.init();
   motor.initFOC(); // Start FOC without alignment
@@ -219,7 +215,6 @@ void setup()
 }
 
 unsigned long iTimeSend = 0;
-float vel, predangle, realangle;
 float fSpeed;
 
 void loop()
@@ -245,9 +240,6 @@ void loop()
     motor.move(target);
     GPIO_BC(GPIOB) = (uint32_t)GPIO_PIN_7;
 
-    //vel = motor.shaft_velocity;
-    //predangle = smooth.getAngle();
-    //realangle = sensor.getAngle();
   }
 
   // user communication
