@@ -18,7 +18,6 @@
 #endif
 */
 
-// HallSensor(int hallA, int hallB , int hallC , int pp)  = HallSensor A, B and C pins , pp = pole pairs
 HallSensor sensor = HallSensor(HALL_A_PIN, HALL_B_PIN, HALL_C_PIN, BLDC_POLE_PAIRS);
 
 // Interrupt routine initialization
@@ -27,10 +26,9 @@ void doB()  { sensor.handleB(); }
 void doC()  { sensor.handleC(); }
 
 // BLDC motor & driver instance
-//BLDCMotor motor = BLDCMotor(BLDC_POLE_PAIRS); // int pp,  float R = NOT_SET [Ohm], float KV = NOT_SET [rpm/V], float L = NOT_SET [H]
 //BLDCMotor motor = BLDCMotor(BLDC_POLE_PAIRS, 0.1664, 16.0, 0.00036858);
 BLDCMotor motor = BLDCMotor(BLDC_POLE_PAIRS, NOT_SET, NOT_SET, 0.00036858); 
-BLDCDriver6PWM driver = BLDCDriver6PWM( BLDC_BH_PIN,BLDC_BL_PIN,  BLDC_GH_PIN,BLDC_GL_PIN,  BLDC_YH_PIN,BLDC_YL_PIN );
+BLDCDriver6PWM driver = BLDCDriver6PWM( BLDC_GH_PIN,BLDC_GL_PIN, BLDC_BH_PIN,BLDC_BL_PIN, BLDC_YH_PIN,BLDC_YL_PIN );
 
 // instantiate the smoothing sensor, providing the real sensor as a constructor argument
 SmoothingSensor smooth = SmoothingSensor(sensor, motor);
@@ -157,7 +155,6 @@ void setup()
   motor.linkSensor(&smooth); // link the motor to the smoothing sensor
 
   driver.voltage_power_supply = 26; // 3.6 * BAT_CELLS; // power supply voltage [V]
-  motor.voltage_limit = driver.voltage_power_supply * 0.58; // should be half the power supply
   if (driver.init())
   {
     driver.enable();
@@ -170,21 +167,34 @@ void setup()
     return; // cancel simpleFOC setup
   }
 
+  // link the driver to the current sense
+  current_sense.linkDriver(&driver);
+
   motor.linkDriver(&driver);  // link driver
   motor.voltage_sensor_align  = 2;                            // aligning voltage
   motor.foc_modulation        = FOCModulationType::SpaceVectorPWM; // Only with Current Sense
   motor.controller            = MotionControlType::torque;    // set motion control loop to be used
-  motor.torque_controller     = TorqueControlType::voltage;
-  //motor.motion_downsample = 100;
+  motor.torque_controller     = TorqueControlType::foc_current;
+  
+  // When current sensing is used, reduce the voltage limit to have enough low side ON time for phase current sampling
+  if (motor.torque_controller == TorqueControlType::foc_current ||
+     motor.torque_controller == TorqueControlType::dc_current){
+    motor.voltage_limit = driver.voltage_power_supply * 0.54;
+  }else{
+    motor.voltage_limit = driver.voltage_power_supply * 0.58;
+  }
 
   // velocity low pass filtering time constant
   motor.PID_velocity.P  = 0.6f;
   motor.PID_velocity.I  = 5.0f;
   motor.LPF_velocity.Tf = 0.05f;
 
-/*  
+  
+  // motor init
+  motor.init();
+  current_sense.skip_align = true;
   if (current_sense.init())
-  {
+  {  
     motor.linkCurrentSense(&current_sense);
     Blink(3,oLedOrange);
   }
@@ -194,69 +204,61 @@ void setup()
     OUTN("current_sense.init() failed.")
     return;   // cancel simpleFOC setup
   }
-*/
+  
 
   // initialize motor
   motor.sensor_direction=Direction::CCW;
   motor.zero_electric_angle = 2.09;     // use the real value!
-  motor.init();
-  motor.initFOC(); // Start FOC without alignment
+  motor.initFOC();
   
 
   // add target command T
-  command.add('T', doTarget, "target voltage");
+  command.add('t', doTarget, "target voltage");
   // add smoothing enable/disable command E (send E0 to use hall sensor alone, or E1 to use smoothing)
-  command.add('E', enableSmoothing, "enable smoothing");
-  command.add('P', doPhaseCorrection, "phase correction");
-  command.add('Z', doZero, "zero electrical angle");
-  command.add('F', doLPF, "LPF");
+  command.add('e', enableSmoothing, "enable smoothing");
+  command.add('p', doPhaseCorrection, "phase correction");
+  command.add('z', doZero, "zero electrical angle");
+  command.add('f', doLPF, "LPF");
 
   Blink(3,oLedGreen);
 }
 
 unsigned long iTimeSend = 0;
 float fSpeed;
+PhaseCurrent_s currents;
+float current_magnitude;
 
 void loop()
 {
   
-  if (motor.enabled)  // set by successful motor.init() at the end of setup()
-  {
+  if (motor.enabled){  // set by successful motor.init() at the end of setup()
     // main FOC algorithm function
     // the faster you run this function the better
     // Arduino UNO loop  ~1kHz
     // Bluepill loop ~10kHz
-    GPIO_BOP(GPIOB) = (uint32_t)GPIO_PIN_6; 
+    //GPIO_BOP(GPIOB) = (uint32_t)GPIO_PIN_6; 
     motor.loopFOC();
-    GPIO_BC(GPIOB) = (uint32_t)GPIO_PIN_6;
+    //GPIO_BC(GPIOB) = (uint32_t)GPIO_PIN_6;
 
     // Motion control function
     // velocity, position or voltage (defined in motor.controller)
     // this function can be run at much lower frequency than loopFOC() function
     // You can also use motor.move() and set the motor.target in the code
-    //fSpeed = (motor.voltage_limit) * (ABS((float)(((millis()-iLoopStart)/10 + 250) % 1000) - 500) - 250)/250;
+    //fSpeed = (motor.voltage_limit/2) * (ABS((float)(((millis()-iLoopStart)/10 + 250) % 1000) - 500) - 250)/250;
     
-    GPIO_BOP(GPIOB) = (uint32_t)GPIO_PIN_7;
+    //GPIO_BOP(GPIOB) = (uint32_t)GPIO_PIN_7;
     motor.move(target);
-    GPIO_BC(GPIOB) = (uint32_t)GPIO_PIN_7;
-
+    //GPIO_BC(GPIOB) = (uint32_t)GPIO_PIN_7;
   }
 
   // user communication
   command.run();
 
-  if (oOnOff.Get()) oKeepOn.Set(false);
+  //if (oOnOff.Get()) oKeepOn.Set(false);
 
-  /*
-  DEBUG(
-    if (current_sense.initialized)
-    {
-      PhaseCurrent_s currents = current_sense.getPhaseCurrents();
-      float current_magnitude = current_sense.getDCCurrent();
-      OUT2T("mA",current_magnitude*1000)  // milli Amps
-      OUT2T("B mA",currents.b*1000)  // milli Amps
-      OUT2T("C mA",currents.c*1000)  // milli Amps
-    }
-  )
-  */
+  if (current_sense.initialized){
+    currents = current_sense.getPhaseCurrents();
+    currents.c = -(currents.a + currents.b);
+    current_magnitude = current_sense.getDCCurrent();
+  }
 }
