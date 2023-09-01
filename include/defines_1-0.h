@@ -19,20 +19,20 @@
 
 // Brushless Control DC (BLDC) defines
 // Channel G
-#define BLDC_GH_PIN PA8		// right motor u
-#define BLDC_GL_PIN PB13
+#define BLDC_GH_PIN PA10		// right motor u
+#define BLDC_GL_PIN PB15
 // Channel B
 #define BLDC_BH_PIN PA9		// right motor v
 #define BLDC_BL_PIN PB14
 // Channel Y
-#define BLDC_YH_PIN PA10	// right motor w
-#define BLDC_YL_PIN PB15
+#define BLDC_YH_PIN PA8	// right motor w
+#define BLDC_YL_PIN PB13
 
 // BLDC low-side current sense pins (R_ds)
 #define BLDC_CUR_Rds 0.008	// R_ds of the low side n-Chnannel mosfets
-#define BLDC_CUR_Gain 50.0	// gain of the op-amp to amplify voltage_drain-source
-#define BLDC_CUR_G_PIN PC4	//	RIGHT_U_CUR_PIN
-#define BLDC_CUR_B_PIN PC5	//	RIGHT_V_CUR_PIN
+#define BLDC_CUR_Gain -2.5	// gain of the op-amp to amplify voltage_drain-source
+#define BLDC_CUR_G_PIN PC5	//	RIGHT_U_CUR_PIN
+#define BLDC_CUR_B_PIN PC4	//	RIGHT_V_CUR_PIN
 #define BLDC_CUR_Y_PIN _NC
 
 
@@ -43,3 +43,5 @@
 // Button defines
 // Usually used as INPUT but could be used as analog input if available on the pin to detect button press with low voltage batteries  
 #define BUTTON_PIN PA1	// BUTTON_PIN
+
+//#define VBAT PC2

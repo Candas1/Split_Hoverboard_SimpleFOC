@@ -40,3 +40,5 @@
 // Button defines
 // Usually used as INPUT but could be used as analog input if available on the pin to detect button press with low voltage batteries  
 #define BUTTON_PIN PC15
+
+#define VBAT PA4

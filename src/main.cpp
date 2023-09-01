@@ -4,19 +4,12 @@
 #include <SimpleFOC.h>
 #include <SimpleFOCDrivers.h>
 #include <encoders/smoothing/SmoothingSensor.h>
+#include <voltage/GenericVoltageSense.h>
 
 #ifdef DEBUG_STLINK
   #include <RTTStream.h>
   RTTStream rtt;
 #endif
-
-/*
-#ifdef DEBUG_UART // use Serial1 with differen rx/tx pins as DEBUG_UART
-  HardwareSerial oSerialSteer(PB7, PB6,0);  // 1 = uart_index = Serial2 ; 0 = uart_index = Serial1
-  #undef DEBUG_UART
-  #define DEBUG_UART oSerialSteer
-#endif
-*/
 
 HallSensor sensor = HallSensor(HALL_A_PIN, HALL_B_PIN, HALL_C_PIN, BLDC_POLE_PAIRS);
 
@@ -36,6 +29,10 @@ SmoothingSensor smooth = SmoothingSensor(sensor, motor);
 // shunt resistor value , gain value,  pins phase A,B,C
 LowsideCurrentSense current_sense = LowsideCurrentSense(BLDC_CUR_Rds, BLDC_CUR_Gain, BLDC_CUR_G_PIN, BLDC_CUR_B_PIN, BLDC_CUR_Y_PIN);
 
+#ifdef VBAT
+GenericVoltageSense battery = GenericVoltageSense(VBAT,30,0,0.5);
+float battery_voltage,vref;
+#endif
 
 class CIO   // little helper class to demonstrate object oriented programming
 {	
@@ -83,33 +80,11 @@ void Blink(int iBlinks, CIO& oLed = oLedRed)
 
 unsigned long iLoopStart = 0;   // time setup() finishes and loop() starts
 
-Commander command = Commander(rtt);
+Commander command = Commander(SERIALDEBUG);
 
 float target = 0;
 
 void doTarget(char* cmd) { command.scalar(&target, cmd); }
-void doPhaseCorrection(char* cmd) {
-  float phase_correction;
-  command.scalar(&phase_correction, cmd);
-  smooth.phase_correction = phase_correction;
-}
-
-void doZero(char* cmd) {
-  float zero_angle;
-  command.scalar(&zero_angle, cmd);
-  motor.zero_electric_angle = zero_angle;
-}
-void enableSmoothing(char* cmd) {
-  float enable;
-  command.scalar(&enable, cmd);
-  motor.linkSensor(enable == 0 ? (Sensor*)&sensor : (Sensor*)&smooth);
-}
-
-void doLPF(char* cmd) {
-  float LPF;
-  command.scalar(&LPF, cmd);
-  motor.LPF_velocity.Tf = LPF;
-}
 
 // ########################## SETUP ##########################
 void setup()
@@ -188,8 +163,14 @@ void setup()
   motor.PID_velocity.P  = 0.6f;
   motor.PID_velocity.I  = 5.0f;
   motor.LPF_velocity.Tf = 0.05f;
-
   
+
+  #ifdef VBAT
+  battery.init(12);
+  battery.update();
+  battery_voltage = battery.getVoltage();
+  #endif
+
   // motor init
   motor.init();
   current_sense.skip_align = true;
@@ -207,19 +188,13 @@ void setup()
   
 
   // initialize motor
-  motor.sensor_direction=Direction::CCW;
-  motor.zero_electric_angle = 2.09;     // use the real value!
+  motor.sensor_direction= MOTOR_sensor_direction;
+  motor.zero_electric_angle = MOTOR_zero_electric_offset;     // use the real value!
   motor.initFOC();
-  
 
   // add target command T
   command.add('t', doTarget, "target voltage");
-  // add smoothing enable/disable command E (send E0 to use hall sensor alone, or E1 to use smoothing)
-  command.add('e', enableSmoothing, "enable smoothing");
-  command.add('p', doPhaseCorrection, "phase correction");
-  command.add('z', doZero, "zero electrical angle");
-  command.add('f', doLPF, "LPF");
-
+ 
   Blink(3,oLedGreen);
 }
 
@@ -261,4 +236,10 @@ void loop()
     currents.c = -(currents.a + currents.b);
     current_magnitude = current_sense.getDCCurrent();
   }
+
+  #ifdef VBAT 
+  battery.update();
+  battery_voltage = battery.getVoltage();
+  #endif
+  //vref = analogRead(ADC_VREF);
 }
