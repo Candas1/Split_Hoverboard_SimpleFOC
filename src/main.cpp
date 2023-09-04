@@ -30,7 +30,7 @@ SmoothingSensor smooth = SmoothingSensor(sensor, motor);
 LowsideCurrentSense current_sense = LowsideCurrentSense(BLDC_CUR_Rds, BLDC_CUR_Gain, BLDC_CUR_G_PIN, BLDC_CUR_B_PIN, BLDC_CUR_Y_PIN);
 
 #ifdef VBAT
-GenericVoltageSense battery = GenericVoltageSense(VBAT,30,0,0.5);
+GenericVoltageSense battery = GenericVoltageSense(VBAT,BATTERY_GAIN,0,0.5);
 float battery_voltage,vref;
 #endif
 
@@ -130,6 +130,9 @@ void setup()
   motor.linkSensor(&smooth); // link the motor to the smoothing sensor
 
   driver.voltage_power_supply = 26; // 3.6 * BAT_CELLS; // power supply voltage [V]
+  driver.pwm_frequency = 16000;
+  driver.dead_zone = 0.03;
+
   if (driver.init())
   {
     driver.enable();
@@ -149,7 +152,7 @@ void setup()
   motor.voltage_sensor_align  = 2;                            // aligning voltage
   motor.foc_modulation        = FOCModulationType::SpaceVectorPWM; // Only with Current Sense
   motor.controller            = MotionControlType::torque;    // set motion control loop to be used
-  motor.torque_controller     = TorqueControlType::foc_current;
+  motor.torque_controller     = TorqueControlType::voltage;
   
   // When current sensing is used, reduce the voltage limit to have enough low side ON time for phase current sampling
   if (motor.torque_controller == TorqueControlType::foc_current ||

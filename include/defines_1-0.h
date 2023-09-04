@@ -45,3 +45,4 @@
 #define BUTTON_PIN PA1	// BUTTON_PIN
 
 //#define VBAT PC2
+#define BATTERY_GAIN 33

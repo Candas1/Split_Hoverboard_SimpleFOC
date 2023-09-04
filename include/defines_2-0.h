@@ -42,3 +42,4 @@
 #define BUTTON_PIN PC15
 
 #define VBAT PA4
+#define BATTERY_GAIN 31
