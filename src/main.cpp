@@ -205,6 +205,8 @@ unsigned long iTimeSend = 0;
 float fSpeed;
 PhaseCurrent_s currents;
 float current_magnitude;
+float battery_current;
+LowPassFilter LPF_target(0.5);  //  the higher the longer new values need to take effect
 
 void loop()
 {
@@ -225,7 +227,7 @@ void loop()
     //fSpeed = (motor.voltage_limit/2) * (ABS((float)(((millis()-iLoopStart)/10 + 250) % 1000) - 500) - 250)/250;
     
     //GPIO_BOP(GPIOB) = (uint32_t)GPIO_PIN_7;
-    motor.move(target);
+    motor.move(LPF_target(target));
     //GPIO_BC(GPIOB) = (uint32_t)GPIO_PIN_7;
   }
 
@@ -243,6 +245,7 @@ void loop()
   #ifdef VBAT 
   battery.update();
   battery_voltage = battery.getVoltage();
+  battery_current = (motor.current.d * motor.voltage.d + motor.current.q * motor.voltage.q) / battery_voltage;
   #endif
   //vref = analogRead(ADC_VREF);
 }
