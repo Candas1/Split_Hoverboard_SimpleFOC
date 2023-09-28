@@ -116,8 +116,8 @@ void setup()
   }
 
   // For time measurement with the oscilloscope
-  pinMode(PB6,OUTPUT);
-  pinMode(PB7,OUTPUT);
+  //pinMode(PA2,OUTPUT);
+  //pinMode(PA3,OUTPUT);
 
   for (int i=0; i<HALL_Count; i++)  aoHall[i].Init();
 
@@ -152,17 +152,21 @@ void setup()
   motor.voltage_sensor_align  = 2;                            // aligning voltage
   motor.foc_modulation        = FOCModulationType::SpaceVectorPWM; // Only with Current Sense
   motor.controller            = MotionControlType::torque;    // set motion control loop to be used
-  motor.torque_controller     = TorqueControlType::voltage;
+  motor.torque_controller     = TorqueControlType::foc_current;
   
-  // When current sensing is used, reduce the voltage limit to have enough low side ON time for phase current sampling
-  if (motor.torque_controller == TorqueControlType::foc_current ||
-     motor.torque_controller == TorqueControlType::dc_current){
-    motor.voltage_limit = driver.voltage_power_supply * 0.54;
+  if (motor.controller == MotionControlType::torque || motor.controller == MotionControlType::angle || motor.controller == MotionControlType::velocity){
+    if (motor.torque_controller == TorqueControlType::foc_current || motor.torque_controller == TorqueControlType::dc_current){
+      // When current sensing is used, reduce the voltage limit to have enough low side ON time for phase current sampling  
+      motor.voltage_limit = driver.voltage_power_supply * 0.54;
+    }else{
+      motor.voltage_limit = driver.voltage_power_supply * 0.58;
+    }
   }else{
-    motor.voltage_limit = driver.voltage_power_supply * 0.58;
+    // For openloop angle and velocity modes, use very small limit
+    motor.voltage_limit = driver.voltage_power_supply * 0.05;
   }
 
-  // velocity low pass filtering time constant
+  // Velocity PID Parameters
   motor.PID_velocity.P  = 0.6f;
   motor.PID_velocity.I  = 5.0f;
   motor.LPF_velocity.Tf = 0.05f;
@@ -205,30 +209,18 @@ unsigned long iTimeSend = 0;
 float fSpeed;
 PhaseCurrent_s currents;
 float current_magnitude;
-float battery_current;
 LowPassFilter LPF_target(0.5);  //  the higher the longer new values need to take effect
 
 void loop()
 {
   
   if (motor.enabled){  // set by successful motor.init() at the end of setup()
-    // main FOC algorithm function
-    // the faster you run this function the better
-    // Arduino UNO loop  ~1kHz
-    // Bluepill loop ~10kHz
-    //GPIO_BOP(GPIOB) = (uint32_t)GPIO_PIN_6; 
+    //GPIO_BOP(GPIOA) = (uint32_t)GPIO_PIN_3; // For GD32
+    //GPIOA->BSRR = GPIO_BSRR_BS2; // For STM32
     motor.loopFOC();
-    //GPIO_BC(GPIOB) = (uint32_t)GPIO_PIN_6;
-
-    // Motion control function
-    // velocity, position or voltage (defined in motor.controller)
-    // this function can be run at much lower frequency than loopFOC() function
-    // You can also use motor.move() and set the motor.target in the code
-    //fSpeed = (motor.voltage_limit/2) * (ABS((float)(((millis()-iLoopStart)/10 + 250) % 1000) - 500) - 250)/250;
-    
-    //GPIO_BOP(GPIOB) = (uint32_t)GPIO_PIN_7;
+    //GPIOA->BRR = GPIO_BRR_BR2; // For STM32
+    //GPIO_BC(GPIOA) = (uint32_t)GPIO_PIN_3; // For GD32    
     motor.move(LPF_target(target));
-    //GPIO_BC(GPIOB) = (uint32_t)GPIO_PIN_7;
   }
 
   // user communication
@@ -241,11 +233,11 @@ void loop()
     currents.c = -(currents.a + currents.b);
     current_magnitude = current_sense.getDCCurrent();
   }
-
+  
   #ifdef VBAT 
   battery.update();
   battery_voltage = battery.getVoltage();
   battery_current = (motor.current.d * motor.voltage.d + motor.current.q * motor.voltage.q) / battery_voltage;
   #endif
-  //vref = analogRead(ADC_VREF);
+  
 }
