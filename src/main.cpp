@@ -1,6 +1,6 @@
 #include <Arduino.h>
-#include <Config.h>
-#include <Defines.h>
+#include <config.h>
+#include <defines.h>
 #include <SimpleFOC.h>
 #include <SimpleFOCDrivers.h>
 #include <encoders/smoothing/SmoothingSensor.h>
