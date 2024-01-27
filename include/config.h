@@ -18,7 +18,7 @@
     //#define DEBUG_UART  Serial
     //HardwareSerial oSerialSteer(PB11, PB10);  // short cable 5VT EFeru USART3 GPIO Configuration
     //#define DEBUG_UART oSerialSteer
-    #define DEBUG_STLINK rtt
+    //#define DEBUG_STLINK rtt
   #else
     #define HOVER_GEN   2
     #define HOVER_LAYOUT	0
