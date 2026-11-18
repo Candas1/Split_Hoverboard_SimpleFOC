@@ -8,7 +8,7 @@
 
 
 #ifdef SENSORLESS
-#include <encoders/flux_observer/FluxObserverSensor.h>
+#include <encoders/MXLEMMING_observer/MXLEMMINGObserverSensor.h>
 #else
 #include <encoders/smoothing/SmoothingSensor.h>
 #endif
@@ -24,7 +24,7 @@ BLDCMotor motor = BLDCMotor(BLDC_POLE_PAIRS, 0.1664, 17.0, 0.00036858);
 BLDCDriver6PWM driver = BLDCDriver6PWM( BLDC_GH_PIN,BLDC_GL_PIN, BLDC_BH_PIN,BLDC_BL_PIN, BLDC_YH_PIN,BLDC_YL_PIN );
 
 #ifdef SENSORLESS 
-  FluxObserverSensor fluxsensor = FluxObserverSensor(motor);
+  MXLEMMINGObserverSensor fluxsensor = MXLEMMINGObserverSensor(motor);
 #else
   HallSensor sensor = HallSensor(HALL_A_PIN, HALL_B_PIN, HALL_C_PIN, BLDC_POLE_PAIRS);
   // Interrupt routine initialization
